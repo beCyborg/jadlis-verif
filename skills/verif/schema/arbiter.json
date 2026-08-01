@@ -1,0 +1,68 @@
+{
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "overall",
+    "assessments"
+  ],
+  "properties": {
+    "overall": {
+      "type": "string",
+      "description": "2-3 sentence meta-assessment of the findings set as a whole: overall quality, notable provider disagreements, dominant failure modes"
+    },
+    "assessments": {
+      "type": "array",
+      "description": "Exactly one assessment per input finding id (F1..Fn). Do not invent ids that are not in the input.",
+      "items": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": [
+          "id",
+          "recommendation",
+          "confidence",
+          "rationale",
+          "refuted",
+          "refuted_reason",
+          "cross_check",
+          "adjusted_severity"
+        ],
+        "properties": {
+          "id": {
+            "type": "string",
+            "description": "Finding id exactly as given in the input (e.g. F1)"
+          },
+          "recommendation": {
+            "type": "string",
+            "enum": ["apply", "skip", "discuss"],
+            "description": "apply = genuinely good idea, worth applying; skip = not worth applying (weak, wrong, or cost exceeds benefit); discuss = defensible either way, needs a human call"
+          },
+          "confidence": {
+            "type": "number",
+            "description": "Arbiter's confidence in the recommendation, 0.0-1.0"
+          },
+          "rationale": {
+            "type": "string",
+            "description": "1-3 sentences: cost/benefit of applying this finding to the target file. Grounded in the finding's own evidence and the target file content only."
+          },
+          "refuted": {
+            "type": "boolean",
+            "description": "true when the finding is factually wrong or does not apply to the target file as written"
+          },
+          "refuted_reason": {
+            "type": ["string", "null"],
+            "description": "Required when refuted=true: concrete reason with reference to target file content; null otherwise"
+          },
+          "cross_check": {
+            "type": ["string", "null"],
+            "description": "What verifier cross-checking shows, using anonymized labels: e.g. 'A+B agree independently', 'C-only, unconfirmed', 'contradicts F3'; agreement is a weak signal (correlated errors) — record it, do not treat it as proof; null when nothing notable"
+          },
+          "adjusted_severity": {
+            "type": "string",
+            "enum": ["critical", "high", "medium", "low"],
+            "description": "Arbiter's calibrated severity; may differ from the providers' severity"
+          }
+        }
+      }
+    }
+  }
+}
