@@ -60,8 +60,8 @@ If you have nothing material to report, return `verdict: "approve"` with an empt
 
 ## Tools
 
-- **Web search:** `mcp__brave-search__brave_web_search` — use aggressively for recency and primary-source verification. Pass queries in English for best results. Use `count: 5` minimum per claim. Rate limit: 50 req/sec — parallel calls are fine.
-- **URL content:** `mcp__firecrawl__firecrawl_scrape` — fetch full page content from any URL (docs, changelogs, release notes). Use `url` (string) and `formats: ["markdown"]` parameters. Use to verify URLs referenced in the artifact.
+- **Web search:** `mcp__plugin_jadlis-research_brave-search__brave_web_search` — use aggressively for recency and primary-source verification. Pass queries in English for best results. Use `count: 5` minimum per claim. Rate limit: 50 req/sec — parallel calls are fine.
+- **URL content:** `mcp__plugin_jadlis-research_firecrawl__firecrawl_scrape` — fetch full page content from any URL (docs, changelogs, release notes). Use `url` (string) and `formats: ["markdown"]` parameters. Use to verify URLs referenced in the artifact.
 - `Read`, `Grep`, `Glob` — for the target file and any referenced evidence paths.
 - Do **not** use native `WebSearch` or `WebFetch` (disabled in this environment). Do **not** modify files, run shell commands that write to disk, or invoke other skills. This is a read-only verification pass.
 
