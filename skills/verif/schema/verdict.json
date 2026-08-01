@@ -1,0 +1,135 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://github.com/verif-codex/schema/verdict.json",
+  "title": "verif-codex verdict",
+  "description": "Adversarial verification verdict for plans, research, and docs. Compatible with OpenAI Structured Outputs (all properties required, optional fields use nullable union types, no format:uri).",
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "verdict",
+    "summary",
+    "findings",
+    "next_steps"
+  ],
+  "properties": {
+    "verdict": {
+      "type": "string",
+      "enum": [
+        "approve",
+        "needs-revision",
+        "unreliable"
+      ],
+      "description": "approve = sound; needs-revision = material issues; unreliable = fundamental problems"
+    },
+    "summary": {
+      "type": "string",
+      "minLength": 1,
+      "description": "2-3 sentence overall assessment"
+    },
+    "findings": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": [
+          "severity",
+          "title",
+          "body",
+          "category",
+          "claim_type",
+          "confidence",
+          "recommendation",
+          "evidence_urls",
+          "source_date",
+          "file",
+          "line_start",
+          "line_end"
+        ],
+        "properties": {
+          "severity": {
+            "type": "string",
+            "enum": ["critical", "high", "medium", "low"]
+          },
+          "title": {
+            "type": "string",
+            "minLength": 1
+          },
+          "body": {
+            "type": "string",
+            "minLength": 1,
+            "description": "Must lead with FACT/INFERENCE/SPECULATION label per AGENTS.md"
+          },
+          "category": {
+            "type": "string",
+            "enum": [
+              "evidence_audit",
+              "assumption_challenge",
+              "alternative_advocacy",
+              "risk_discovery",
+              "reference_check",
+              "simpler_path",
+              "fact_check",
+              "source_verification",
+              "missing_perspective",
+              "recency_check",
+              "methodology_challenge",
+              "version_accuracy",
+              "api_syntax",
+              "url_validation",
+              "completeness",
+              "misleading_claims"
+            ],
+            "description": "Which protocol step surfaced this finding"
+          },
+          "claim_type": {
+            "type": "string",
+            "enum": ["fact", "inference", "speculation"],
+            "description": "Epistemic status of the main claim (see AGENTS.md)"
+          },
+          "evidence_urls": {
+            "type": "array",
+            "items": {
+              "type": "string",
+              "minLength": 1
+            },
+            "description": "Primary-source URLs backing this finding. Empty array allowed for architectural inferences, but speculation-only findings must cap severity at medium."
+          },
+          "source_date": {
+            "type": ["string", "null"],
+            "description": "ISO date (YYYY-MM-DD) of the primary source when recency-dependent; null otherwise"
+          },
+          "confidence": {
+            "type": "number",
+            "minimum": 0,
+            "maximum": 1,
+            "description": "0.0-1.0. Community/blog-only findings must cap at 0.6"
+          },
+          "recommendation": {
+            "type": "string",
+            "description": "Concrete correction or alternative"
+          },
+          "file": {
+            "type": ["string", "null"],
+            "description": "File path when finding is anchored to a specific source file; null otherwise"
+          },
+          "line_start": {
+            "type": ["integer", "null"],
+            "minimum": 1
+          },
+          "line_end": {
+            "type": ["integer", "null"],
+            "minimum": 1
+          }
+        }
+      }
+    },
+    "next_steps": {
+      "type": "array",
+      "items": {
+        "type": "string",
+        "minLength": 1
+      },
+      "description": "Top concrete actions for the user to take"
+    }
+  }
+}

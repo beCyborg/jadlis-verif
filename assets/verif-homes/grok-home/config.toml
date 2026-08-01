@@ -1,0 +1,36 @@
+# verif Grok home config — изолированный профиль верификатора
+# GROK_HOME указывает сюда; auth.json — symlink на ~/.grok/auth.json (создаётся в prelude скилла)
+
+[cli]
+auto_update = false
+
+[models]
+default = "grok-4.5"
+default_reasoning_effort = "high"
+
+[memory]
+enabled = false
+
+[memory.session]
+save_on_end = false
+
+[memory.watcher]
+enabled = false
+
+[memory.initial_injection]
+enabled = false
+
+[compat.claude]
+agents = false
+skills = false
+rules = false
+hooks = false
+mcps = false
+
+[marketplace]
+official_marketplace_auto_installed = true
+default_skills_installs_purged = true
+
+[[marketplace.sources]]
+name = "xAI Official"
+git = "https://github.com/xai-org/plugin-marketplace.git"
