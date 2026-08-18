@@ -5,7 +5,7 @@
 auto_update = false
 
 [models]
-default = "grok-4.5"
+default = "grok-4.6"
 default_reasoning_effort = "high"
 
 [memory]

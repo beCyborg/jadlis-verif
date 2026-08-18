@@ -1,17 +1,17 @@
 ---
 name: verif
-description: Triple adversarial верификация — Codex (GPT-5.6 Sol) + Claude Fable 5 + Grok (grok-4.5) параллельно. Проверяет факты через search, оспаривает решения, находит пропущенные риски. После merge — этап Арбитра (Fable 5 судит дедуплицированные находки, кросс-чекает провайдеров, помечает опровергнутые), затем батч-интервью по находкам с рекомендациями арбитра и параллельное применение одобренных правок субагентами. Для single-provider — флаг --only codex|fable|grok; --report-only / --json — отчёт без интервью. TRIGGER when — user says "/verif", "/jadlis-research:verif", "верифицируй план", "проверь план перед имплементацией", "adversarial review плана", "verify plan", "проверь ресерч на факты", "фактчек документа". DO NOT TRIGGER when — ревью кода/diff (use /code-review), полное исследование темы (use /jadlis-research:full-research), быстрый фактчек одного утверждения (use /jadlis-research:search).
+description: Triple adversarial верификация — Codex (GPT-5.6 Sol) + Claude Fable 5 + Grok (grok-4.6) параллельно. Проверяет факты через search, оспаривает решения, находит пропущенные риски. После merge — этап Арбитра (Fable 5 судит дедуплицированные находки, кросс-чекает провайдеров, помечает опровергнутые), затем батч-интервью по находкам с рекомендациями арбитра и параллельное применение одобренных правок субагентами. Для single-provider — флаг --only codex|fable|grok; --report-only / --json — отчёт без интервью. TRIGGER when — user says "/verif", "/jadlis-research:verif", "верифицируй план", "проверь план перед имплементацией", "adversarial review плана", "verify plan", "проверь ресерч на факты", "фактчек документа". DO NOT TRIGGER when — ревью кода/diff (use /code-review), полное исследование темы (use /jadlis-research:full-research), быстрый фактчек одного утверждения (use /jadlis-research:search).
 argument-hint: "[focus] [--file <path>] [--type plan|research|doc] [--only codex|fable|grok] [--report-only] [--json]"
 allowed-tools: Read, Glob, Write, Edit, MultiEdit, AskUserQuestion, Task, Agent, Bash(codex:*), Bash(claude:*), Bash(grok:*), Bash(mktemp:*), Bash(cat:*), Bash(ls:*), Bash(jq:*), Bash(rm:*), Bash(trap:*), Bash(grep:*), Bash(echo:*), Bash(ln:*), Bash(bash:*), Bash(test:*), Bash(chmod:*), Bash(mkdir:*), Bash(date:*), Bash(sed:*), Bash(wc:*), Bash(stat:*)
 ---
 
 # /jadlis-research:verif — Triple adversarial верификация (Codex + Fable 5 + Grok) с арбитром
 
-Тонкий orchestrator трёх независимых верификаторов: OpenAI GPT-5.6 Sol через `codex exec`, Anthropic Claude Fable 5 через `claude -p` (headless), xAI grok-4.5 (high effort) через `grok --prompt-file` (подписочный CLI, $0). Все возвращают JSON по единой `schema/verdict.json`. Результаты сливаются через `scripts/merge_verdicts.sh` (strict hierarchy: unreliable > needs-revision > approve, N провайдеров с метками) и рендерятся через `scripts/render_merged.sh`.
+Тонкий orchestrator трёх независимых верификаторов: OpenAI GPT-5.6 Sol через `codex exec`, Anthropic Claude Fable 5 через `claude -p` (headless), xAI grok-4.6 (high effort) через `grok --prompt-file` (подписочный CLI, $0). Все возвращают JSON по единой `schema/verdict.json`. Результаты сливаются через `scripts/merge_verdicts.sh` (strict hierarchy: unreliable > needs-revision > approve, N провайдеров с метками) и рендерятся через `scripts/render_merged.sh`.
 
 Provider-agnostic policy — `${CLAUDE_PLUGIN_DATA}/verif-homes/codex-home/AGENTS.md` для Codex, `system-prompts/fable-verifier.md` для Fable, `${CLAUDE_PLUGIN_DATA}/verif-homes/grok-home/AGENTS.md` для Grok (разворачиваются из `${CLAUDE_PLUGIN_ROOT}/assets/verif-homes/` при первом запуске). Templates — `prompts/{plan,research,doc}.md`.
 
-**Архитектура v6:** single-turn запуск, три параллельных `Bash(run_in_background: true)`. Completion notification приходит независимо для каждого — скилл показывает результат каждого завершившегося верификатора сразу (стриминг). Grok при сбое деградирует (один retry → dual-режим без него, пайплайн жив). После merge — **этап Арбитра**: headless Fable 5 (xhigh) судит дедуплицированные находки в контексте целевого файла, кросс-чекает провайдеров и помечает опровергнутые. Затем Фаза A: батч-интервью по находкам с рекомендациями арбитра, и Фаза B: параллельное применение одобренных правок субагентами (один файл = один субагент).
+**Архитектура v6:** single-turn запуск, три параллельных `Bash(run_in_background: true)`. Completion notification приходит независимо для каждого — скилл показывает результат каждого завершившегося верификатора сразу (стриминг). Grok при сбое деградирует (один retry → dual-режим без него, пайплайн жив). После merge — **этап Арбитра**: headless Fable 5 (high) судит дедуплицированные находки в контексте целевого файла, кросс-чекает провайдеров и помечает опровергнутые. Затем Фаза A: батч-интервью по находкам с рекомендациями арбитра, и Фаза B: параллельное применение одобренных правок субагентами (один файл = один субагент).
 
 ## Аргументы
 
@@ -92,9 +92,9 @@ fi
 
 # Hardcoded settings
 EFFORT_CODEX="xhigh"
-EFFORT_FABLE="xhigh"
+EFFORT_FABLE="high"
 CODEX_MODEL="gpt-5.6-sol"
-GROK_MODEL="grok-4.5"     # frontier-модель подписки (500K ctx); effort: low|medium|high, high = дефолт
+GROK_MODEL="grok-4.6"     # frontier-модель подписки (500K ctx); effort: low|medium|high|xhigh, high = дефолт
 
 # Выбор Fable-модели: Fable 5 по умолчанию; big-file guard — файлы >350 KB
 # (~100K токенов) уводим сразу на claude-opus-5 (1M-контекст по умолчанию).
@@ -200,7 +200,7 @@ CODEX_HOME="{CODEX_HOME_DIR}" codex exec \
 ```bash
 claude -p "$(cat "{PROMPT_FILE}")" \
   --model "{FABLE_MODEL}" \
-  --effort xhigh \
+  --effort high \
   --output-format json \
   --json-schema "$(cat "{CLAUDE_SCHEMA_FILE}")" \
   --append-system-prompt "$(cat "{FABLE_SYSTEM_PROMPT}")" \
@@ -215,7 +215,7 @@ claude -p "$(cat "{PROMPT_FILE}")" \
 ```bash
 HOME="{GROK_ISO_HOME}" GROK_HOME="{GROK_HOME_DIR}" "{GROK_BIN}" \
   --prompt-file "{PROMPT_FILE}" \
-  -m grok-4.5 \
+  -m grok-4.6 \
   --effort high \
   --json-schema "$(cat "{SCHEMA_PATH}")" \
   --tools "read_file,grep,list_dir,web_search,web_fetch" \
@@ -225,7 +225,7 @@ HOME="{GROK_ISO_HOME}" GROK_HOME="{GROK_HOME_DIR}" "{GROK_BIN}" \
   > "{GROK_OUT}" 2>&1
 ```
 
-ВАЖНО про Grok: `--effort high` передаём явно (grok-4.5 поддерживает `low|medium|high`; high и так дефолт, но пин защищает от смены дефолта на стороне xAI); `HOME="{GROK_ISO_HOME}"` обязателен — иначе Grok читает `~/.claude/settings.json` и его `permissions.deny: ["WebFetch"]` глушит `web_fetch` («Denied by permission policy»), верификатор остаётся без чтения первоисточников; `--allow web_fetch` и `GROK_WEB_FETCH=1` НЕ помогают (deny > allow, проверено 2026-07-10); `--sandbox read-only` НЕ использовать (блокирует сеть → ломает web_search); изоляция — через allowlist `--tools` + запрет `run_terminal_cmd`. `--max-turns 300` — заведомо недостижимый потолок (при 30 Grok упирался в него до выдачи structured output; флаг оставлен явно, т.к. дефолт CLI без него не документирован); реальный backstop от зависания — timeout Bash-инструмента 600000 мс. Allowlist из одного `web_search` ломает сборку агента — использовать ровно указанный набор.
+ВАЖНО про Grok: `--effort high` передаём явно (grok-4.6 поддерживает `low|medium|high|xhigh`; high и так дефолт, но пин защищает от смены дефолта на стороне xAI); `HOME="{GROK_ISO_HOME}"` обязателен — иначе Grok читает `~/.claude/settings.json` и его `permissions.deny: ["WebFetch"]` глушит `web_fetch` («Denied by permission policy»), верификатор остаётся без чтения первоисточников; `--allow web_fetch` и `GROK_WEB_FETCH=1` НЕ помогают (deny > allow, проверено 2026-07-10); `--sandbox read-only` НЕ использовать (блокирует сеть → ломает web_search); изоляция — через allowlist `--tools` + запрет `run_terminal_cmd`. `--max-turns 300` — заведомо недостижимый потолок (при 30 Grok упирался в него до выдачи structured output; флаг оставлен явно, т.к. дефолт CLI без него не документирован); реальный backstop от зависания — timeout Bash-инструмента 600000 мс. Allowlist из одного `web_search` ломает сборку агента — использовать ровно указанный набор.
 
 Сообщи пользователю: "Верификаторы запущены параллельно (Codex GPT-5.6 Sol + Fable 5 + Grok). Результаты будут появляться по мере завершения..."
 
@@ -339,7 +339,7 @@ Judge each finding per your role instructions. Return one assessment per finding
 ```bash
 claude -p "$(cat "{ARBITER_PROMPT_FILE}")" \
   --model "{FABLE_MODEL}" \
-  --effort xhigh \
+  --effort high \
   --output-format json \
   --json-schema "$(cat "{ARBITER_SCHEMA_PATH}")" \
   --append-system-prompt "$(cat "{ARBITER_SYSTEM_PROMPT}")" \
