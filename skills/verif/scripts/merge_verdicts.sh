@@ -25,10 +25,12 @@ usage() {
 
 [[ $# -lt 1 ]] && usage
 
-# Pre-flight per file: valid JSON or {verdict:"unreliable"} stub.
+# Pre-flight per file: valid JSON С полем .verdict, иначе {verdict:"unreliable"} stub.
+# Именно .verdict, не просто валидность: '{}' от normalize_and_merge.sh — валидный JSON,
+# но без verdict merge падал на rank(null) («Cannot index object with null»).
 normalize() {
   local f="$1" label="$2"
-  if [[ -s "$f" ]] && jq -e . "$f" >/dev/null 2>&1; then
+  if [[ -s "$f" ]] && jq -e '.verdict' "$f" >/dev/null 2>&1; then
     cat "$f"
   else
     jq -n --arg l "$label" '{

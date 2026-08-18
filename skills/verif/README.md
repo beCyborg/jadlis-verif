@@ -34,7 +34,7 @@
 │   └── auth.json                (symlink на ~/.codex/auth.json)
 └── grok-home/
     ├── AGENTS.md                (Grok verifier policy — mirror codex AGENTS.md, tools grok)
-    ├── config.toml              (grok-4.5 + high effort, memory off, compat off; CLI дописывает
+    ├── config.toml              (grok-4.6 + high effort, memory off, compat off; CLI дописывает
     │                             runtime-состояние — норм)
     └── auth.json                (symlink на ~/.grok/auth.json)
 ```

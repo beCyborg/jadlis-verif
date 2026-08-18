@@ -5,7 +5,12 @@
 # поэтому каскад из нескольких попыток обязателен — не «на всякий случай»:
 #   Codex — exec пишет прогресс-лог в stdout, verdict-JSON идёт ПОСЛЕДНЕЙ строкой;
 #   Fable — .structured_output, либо .result чистым JSON, либо .result в ```json-fence;
-#   Grok  — .structuredOutput (top-level, camelCase), либо .text как JSON.
+#   Grok  — .structuredOutput (top-level, camelCase), либо .text как JSON,
+#           либо (grok CLI ≥1.0.3) .text = НЕСКОЛЬКО конкатенированных JSON-объектов
+#           (модель эмитит промежуточный JSON до tool-call'ов; CLI склеивает все
+#           сообщения, его собственный парсер падает на «trailing characters» и
+#           оставляет .structuredOutput = null) → берём ПОСЛЕДНИЙ валидный объект
+#           с полем verdict.
 # Не распознали — пишем '{}', merge превратит его в stub unreliable (провайдер молчит,
 # а не «согласен»).
 #
@@ -57,6 +62,29 @@ if [[ "${GROK_PARTICIPATED:-0}" == "1" ]]; then
     jq '.structuredOutput' "$GROK_ENV" > "$GROK_VERDICT"
   elif [[ -s "$GROK_ENV" ]] && jq -e '.text | fromjson | .verdict' "$GROK_ENV" >/dev/null 2>&1; then
     jq '.text | fromjson' "$GROK_ENV" > "$GROK_VERDICT"
+  elif [[ -s "$GROK_ENV" ]] && python3 -c '
+import json, sys
+d = json.load(open(sys.argv[1]))
+t = d.get("text") or ""
+dec = json.JSONDecoder()
+i = 0
+last = None
+while True:
+    j = t.find("{", i)
+    if j < 0:
+        break
+    try:
+        obj, end = dec.raw_decode(t, j)
+        if isinstance(obj, dict) and "verdict" in obj:
+            last = obj
+        i = end
+    except ValueError:
+        i = j + 1
+if last is None:
+    sys.exit(1)
+print(json.dumps(last, ensure_ascii=False))
+' "$GROK_ENV" > "$GROK_VERDICT" 2>/dev/null && jq -e '.verdict' "$GROK_VERDICT" >/dev/null 2>&1; then
+    : # последний валидный JSON-объект с verdict уже в $GROK_VERDICT
   elif [[ -s "$GROK_ENV" ]] && jq -e '.verdict' "$GROK_ENV" >/dev/null 2>&1; then
     jq . "$GROK_ENV" > "$GROK_VERDICT"
   else
