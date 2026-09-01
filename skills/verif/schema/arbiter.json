@@ -33,7 +33,11 @@
           },
           "recommendation": {
             "type": "string",
-            "enum": ["apply", "skip", "discuss"],
+            "enum": [
+              "apply",
+              "skip",
+              "discuss"
+            ],
             "description": "apply = genuinely good idea, worth applying; skip = not worth applying (weak, wrong, or cost exceeds benefit); discuss = defensible either way, needs a human call"
           },
           "confidence": {
@@ -49,17 +53,67 @@
             "description": "true when the finding is factually wrong or does not apply to the target file as written"
           },
           "refuted_reason": {
-            "type": ["string", "null"],
+            "type": [
+              "string",
+              "null"
+            ],
             "description": "Required when refuted=true: concrete reason with reference to target file content; null otherwise"
           },
           "cross_check": {
-            "type": ["string", "null"],
+            "type": [
+              "string",
+              "null"
+            ],
             "description": "What verifier cross-checking shows, using anonymized labels: e.g. 'A+B agree independently', 'C-only, unconfirmed', 'contradicts F3'; agreement is a weak signal (correlated errors) — record it, do not treat it as proof; null when nothing notable"
           },
           "adjusted_severity": {
             "type": "string",
-            "enum": ["critical", "high", "medium", "low"],
+            "enum": [
+              "critical",
+              "high",
+              "medium",
+              "low"
+            ],
             "description": "Arbiter's calibrated severity; may differ from the providers' severity"
+          },
+          "plain": {
+            "type": "object",
+            "additionalProperties": false,
+            "description": "Слой для человека (по правилам plain-language.md): по-русски, короткими предложениями, без терминов без пояснения. Пересказ body/recommendation/rationale — без новых фактов. Заполнять всегда; поле не в required только чтобы сбой этого слоя не отбрасывал судейство целиком.",
+            "required": [
+              "title",
+              "problem",
+              "if_kept",
+              "if_fixed",
+              "cost",
+              "risk_of_fix"
+            ],
+            "properties": {
+              "title": {
+                "type": "string",
+                "description": "≤8 слов, по-русски, без терминов"
+              },
+              "problem": {
+                "type": "string",
+                "description": "Что не так, 1–2 предложения, как другу. При refuted=true начинать с «Похоже, это не ошибка: …»"
+              },
+              "if_kept": {
+                "type": "string",
+                "description": "Что случится, если оставить как есть — осязаемое последствие"
+              },
+              "if_fixed": {
+                "type": "string",
+                "description": "Что даст исправление — главный плюс, 1 предложение"
+              },
+              "cost": {
+                "type": "string",
+                "description": "Сколько стоит: минуты/часы и что именно менять"
+              },
+              "risk_of_fix": {
+                "type": "string",
+                "description": "Чем рискуем, исправляя. «Ничем» — только если в материале находки явно нет побочных эффектов; если риск не обсуждался — «не описан»; иначе назвать конкретно, что может сломаться"
+              }
+            }
           }
         }
       }

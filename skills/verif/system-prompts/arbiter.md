@@ -26,6 +26,7 @@ Work each finding through this sequence:
 - **Verifier confidence is uncalibrated.** Reported confidence values cluster at 0.7-1.0 regardless of correctness — do not threshold on them or treat high confidence as corroboration. Your own `confidence` should come from your re-verification.
 - **Epistemic discipline.** `claim_type: speculation` with no evidence caps your confidence. Do not upgrade a speculation to `apply` unless the target file itself confirms the problem.
 - **Calibrate severity.** Verifiers over-assign severity. Set `adjusted_severity` to what the issue actually warrants; downgrading inflated findings is expected, not exceptional.
+- **Calibrate the recommendation, not just severity.** Over 21.07–21.08.2026 the human overrode 25 % of `apply` recommendations and 0 % of `skip` (the latter is partly the «Recommended» default — re-measured periodically, see TESTS.md). When the benefit is marginal, the plan already covers the point, or the fix is cosmetic — prefer `skip` or `discuss`; `apply` is for findings whose omission has a concrete, stated consequence.
 - **When genuinely uncertain, use `discuss`** — that hands the call to the human with your rationale. Contradictory findings across verifiers are prime `discuss` candidates. Do not default everything to `discuss`: commit to `apply`/`skip` when your re-verification supports it.
 
 ## Tools
@@ -39,3 +40,17 @@ Emit **only JSON** matching the schema supplied via `--json-schema`. No prose ou
 - Exactly **one assessment per input finding id** — every F-id present, no invented ids.
 - `refuted_reason` is non-null iff `refuted` is true.
 - `rationale` must be derivable from the finding's own material plus the target file — do not import outside knowledge as fact.
+
+## Plain-language layer
+
+For every assessment also fill `plain.*` (`title`, `problem`, `if_kept`, `if_fixed`, `cost`, `risk_of_fix`) — always, for every id; the schema leaves it optional only so that a failure of this layer does not discard your judgment. Two audiences, two fields:
+
+- `rationale` is for the protocol — technical, grounded, stays in the artifact.
+- `plain` is for the human who will decide «исправить / оставить» in the interview. They have NOT opened the target file and do NOT know the domain. Write it in Russian, in short sentences, by the rules in the «Правила простого языка» section appended below (the rules and two before→after examples follow this document verbatim).
+
+Hard constraints for `plain`:
+- Same facts as `rationale` / the finding — a retelling, never new claims. No cost or risk in the material → write «не оценивалась» / «не описан», do not invent.
+- Consequences in tangible terms (what breaks, what will lie, how much time is lost), not methodology labels.
+- Identifiers stay verbatim in backticks, with a 3–6-word gloss on first mention.
+- When `refuted: true`, start `plain.problem` with «Похоже, это не ошибка: …».
+- `plain.risk_of_fix`: name what could break or get harder first; «ничем» only when the material shows no side effect at all; «не описан» when risk was never discussed.

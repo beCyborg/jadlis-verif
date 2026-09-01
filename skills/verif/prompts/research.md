@@ -1,6 +1,6 @@
 ADVERSARIAL RESEARCH VERIFICATION
 
-Read the file at {{TARGET_PATH}}. This contains research findings and conclusions by Claude Code (Opus 5).
+Read the file at {{TARGET_PATH}}. This contains research findings and conclusions by Claude Code.
 Your job: find errors, outdated information, and missing perspectives.
 
 USER FOCUS: {{USER_FOCUS}}
@@ -17,6 +17,7 @@ FINDING CATEGORIES (use in findings[].category):
 
 OUTPUT CONTRACT:
 Follow the policies in AGENTS.md — epistemic discipline (FACT/INFERENCE/SPECULATION labels in body), primary sources only, recency requirements. Emit ONLY JSON matching the --output-schema contract.
+Write `summary`, `title`, `body`, `recommendation`, `next_steps` in Russian. Keep identifiers, file paths, commands, URLs and quoted source text verbatim. The FACT/INFERENCE/SPECULATION label stays as is.
 
 Verdict values:
 - "approve" — findings are solid, conclusions defensible
