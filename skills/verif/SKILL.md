@@ -1,17 +1,19 @@
 ---
 name: verif
-description: Triple adversarial верификация — Codex (GPT-5.6 Sol) + Claude Fable 5 + Grok (grok-4.6) параллельно. Проверяет факты через search, оспаривает решения, находит пропущенные риски. После merge — этап Арбитра (Fable 5 судит дедуплицированные находки, кросс-чекает провайдеров, помечает опровергнутые), затем батч-интервью по находкам с рекомендациями арбитра и параллельное применение одобренных правок субагентами. Для single-provider — флаг --only codex|fable|grok; --report-only / --json — отчёт без интервью. TRIGGER when — user says "/verif", "/jadlis-research:verif", "верифицируй план", "проверь план перед имплементацией", "adversarial review плана", "verify plan", "проверь ресерч на факты", "фактчек документа". DO NOT TRIGGER when — ревью кода/diff (use /code-review), полное исследование темы (use /jadlis-research:full-research), быстрый фактчек одного утверждения (use /jadlis-research:search).
+description: Triple adversarial верификация — Codex (GPT-5.6 Sol) + Claude Fable 5 + Grok (grok-4.6) параллельно. Проверяет факты через search, оспаривает решения, находит пропущенные риски. После merge — этап Арбитра (Fable 5 судит дедуплицированные находки, кросс-чекает провайдеров, помечает опровергнутые), затем батч-интервью по находкам с рекомендациями арбитра и параллельное применение одобренных правок субагентами. Для single-provider — флаг --only codex|fable|grok; --report-only / --json — отчёт без интервью. TRIGGER when — user says "/jadlis-research:verif", "/verif", "верифицируй план", "проверь план перед имплементацией", "adversarial review плана", "verify plan", "проверь ресерч на факты", "фактчек документа". DO NOT TRIGGER when — ревью кода/diff (use /code-review), полное исследование темы (use /jadlis-research:full-research), быстрый фактчек одного утверждения (use /jadlis-research:search).
 argument-hint: "[focus] [--file <path>] [--type plan|research|doc] [--only codex|fable|grok] [--report-only] [--json]"
 allowed-tools: Read, Glob, Write, Edit, MultiEdit, AskUserQuestion, Task, Agent, Bash(codex:*), Bash(claude:*), Bash(grok:*), Bash(mktemp:*), Bash(cat:*), Bash(ls:*), Bash(jq:*), Bash(rm:*), Bash(trap:*), Bash(grep:*), Bash(echo:*), Bash(ln:*), Bash(bash:*), Bash(test:*), Bash(chmod:*), Bash(mkdir:*), Bash(date:*), Bash(sed:*), Bash(wc:*), Bash(stat:*)
 ---
 
-# /jadlis-research:verif — Triple adversarial верификация (Codex + Fable 5 + Grok) с арбитром
+# /verif — Triple adversarial верификация (Codex + Fable 5 + Grok) с арбитром
 
 Тонкий orchestrator трёх независимых верификаторов: OpenAI GPT-5.6 Sol через `codex exec`, Anthropic Claude Fable 5 через `claude -p` (headless), xAI grok-4.6 (high effort) через `grok --prompt-file` (подписочный CLI, $0). Все возвращают JSON по единой `schema/verdict.json`. Результаты сливаются через `scripts/merge_verdicts.sh` (strict hierarchy: unreliable > needs-revision > approve, N провайдеров с метками) и рендерятся через `scripts/render_merged.sh`.
 
 Provider-agnostic policy — `${CLAUDE_PLUGIN_DATA}/verif-homes/codex-home/AGENTS.md` для Codex, `system-prompts/fable-verifier.md` для Fable, `${CLAUDE_PLUGIN_DATA}/verif-homes/grok-home/AGENTS.md` для Grok (разворачиваются из `${CLAUDE_PLUGIN_ROOT}/assets/verif-homes/` при первом запуске). Templates — `prompts/{plan,research,doc}.md`.
 
-**Архитектура v6:** single-turn запуск, три параллельных `Bash(run_in_background: true)`. Completion notification приходит независимо для каждого — скилл показывает результат каждого завершившегося верификатора сразу (стриминг). Grok при сбое деградирует (один retry → dual-режим без него, пайплайн жив). После merge — **этап Арбитра**: headless Fable 5 (high) судит дедуплицированные находки в контексте целевого файла, кросс-чекает провайдеров и помечает опровергнутые. Затем Фаза A: батч-интервью по находкам с рекомендациями арбитра, и Фаза B: параллельное применение одобренных правок субагентами (один файл = один субагент).
+**Архитектура v6 (v6.1 — интервью простым языком: арбитр отдаёт `plain.*`, вопросы строятся по `references/plain-language.md`):** single-turn запуск, три параллельных `Bash(run_in_background: true)`. Completion notification приходит независимо для каждого — скилл показывает результат каждого завершившегося верификатора сразу (стриминг). Grok при сбое деградирует (один retry → dual-режим без него, пайплайн жив). После merge — **этап Арбитра**: headless Fable 5 (high) судит дедуплицированные находки в контексте целевого файла, кросс-чекает провайдеров и помечает опровергнутые. Затем Фаза A: батч-интервью по находкам с рекомендациями арбитра, и Фаза B: параллельное применение одобренных правок субагентами (один файл = один субагент).
+
+> **Оговорка о направлении ревью (KDD'26, arXiv 2607.21656, 116 задач):** в чистой паре «писатель→ревьюер» ревью Codex работ Claude РОНЯЛО pass rate 91,4%→82,8% (обратное направление поднимало 71,6%→89,7%; модели прошлого поколения, ревьюер не запускал тесты). Наш пайплайн от этого защищён арбитром-Fable — поэтому вердиктам одного Codex (`--only codex`) по Claude-артефактам без арбитра не доверять слепо; при расхождении провайдеров вес у арбитра. Перенос выводов на Opus 5/Fable 5 не проверен — свой A/B при случае.
 
 ## Аргументы
 
@@ -81,6 +83,7 @@ ARBITER_SCHEMA_PATH="$VERIFIER_ROOT/schema/arbiter.json"
 BUILD_PROMPT="$VERIFIER_ROOT/scripts/build_prompt.sh"
 FABLE_SYSTEM_PROMPT="$VERIFIER_ROOT/system-prompts/fable-verifier.md"
 ARBITER_SYSTEM_PROMPT="$VERIFIER_ROOT/system-prompts/arbiter.md"
+PLAIN_RULES="$VERIFIER_ROOT/references/plain-language.md"   # правила простого языка: дописываются в system prompt арбитра, читаются главным тредом для интервью/«Коротко»
 
 # First-run symlinks (safe no-op если существуют)
 if [[ ! -e "$CODEX_HOME_DIR/auth.json" ]]; then
@@ -96,16 +99,10 @@ EFFORT_FABLE="high"
 CODEX_MODEL="gpt-5.6-sol"
 GROK_MODEL="grok-4.6"     # frontier-модель подписки (500K ctx); effort: low|medium|high|xhigh, high = дефолт
 
-# Выбор Fable-модели: Fable 5 по умолчанию; big-file guard — файлы >350 KB
-# (~100K токенов) уводим сразу на claude-opus-5 (1M-контекст по умолчанию).
-FABLE_MODEL_PRIMARY="claude-fable-5"
+# Выбор Fable-модели: Fable 5.1 — 1M-контекст нативно, big-file guard снят 01.09.2026.
+FABLE_MODEL_PRIMARY="claude-fable-5-1"
 FABLE_MODEL_FALLBACK="claude-opus-5"
-TARGET_BYTES=$(wc -c < "$ABSOLUTE_PATH")
-if [[ "$TARGET_BYTES" -gt 350000 ]]; then
-  FABLE_MODEL="$FABLE_MODEL_FALLBACK"
-else
-  FABLE_MODEL="$FABLE_MODEL_PRIMARY"
-fi
+FABLE_MODEL="$FABLE_MODEL_PRIMARY"
 
 # Claude-совместимая производная схема: structured outputs Anthropic не поддерживает
 # minLength/minimum/maximum и мета-ключи корня ($schema/$id/title/description) — с ними
@@ -174,6 +171,7 @@ echo "  GROK_ISO_HOME=$GROK_ISO_HOME"
 echo "  GROK_BIN=$GROK_BIN"
 echo "  FABLE_SYSTEM_PROMPT=$FABLE_SYSTEM_PROMPT"
 echo "  ARBITER_SYSTEM_PROMPT=$ARBITER_SYSTEM_PROMPT"
+echo "  PLAIN_RULES=$PLAIN_RULES"
 ```
 
 ## Шаг 5: Запуск верификаторов через Bash(run_in_background)
@@ -186,21 +184,23 @@ echo "  ARBITER_SYSTEM_PROMPT=$ARBITER_SYSTEM_PROMPT"
 
 ```bash
 CODEX_HOME="{CODEX_HOME_DIR}" codex exec \
-  -m "gpt-5.6-sol" \
+  -m "{CODEX_MODEL}" \
   --sandbox read-only \
   --skip-git-repo-check \
   --output-schema "{SCHEMA_PATH}" \
-  -c model_reasoning_effort="xhigh" \
+  -c model_reasoning_effort="{EFFORT_CODEX}" \
   -c service_tier="default" \
   - < "{PROMPT_FILE}" > "{CODEX_OUT}" 2>&1
 ```
+
+Плейсхолдеры `{CODEX_MODEL}` / `{EFFORT_CODEX}` / `{EFFORT_FABLE}` / `{GROK_MODEL}` подставляются из `VERIF_PATHS` prelude — литералы в Bash A/B/C не дублировать. `service_tier="default"` — в плагине стандартный тир; локальный пин `priority` (−15 % латентности, 15.08) — личная настройка получателя, в дистрибутив не входит.
 
 ### Bash B: Fable (run_in_background: true, timeout: 600000)
 
 ```bash
 claude -p "$(cat "{PROMPT_FILE}")" \
   --model "{FABLE_MODEL}" \
-  --effort high \
+  --effort {EFFORT_FABLE} \
   --output-format json \
   --json-schema "$(cat "{CLAUDE_SCHEMA_FILE}")" \
   --append-system-prompt "$(cat "{FABLE_SYSTEM_PROMPT}")" \
@@ -215,7 +215,7 @@ claude -p "$(cat "{PROMPT_FILE}")" \
 ```bash
 HOME="{GROK_ISO_HOME}" GROK_HOME="{GROK_HOME_DIR}" "{GROK_BIN}" \
   --prompt-file "{PROMPT_FILE}" \
-  -m grok-4.6 \
+  -m "{GROK_MODEL}" \
   --effort high \
   --json-schema "$(cat "{SCHEMA_PATH}")" \
   --tools "read_file,grep,list_dir,web_search,web_fetch" \
@@ -258,7 +258,20 @@ bash "${CLAUDE_PLUGIN_ROOT}/skills/verif/scripts/normalize_and_merge.sh"
 
 ## Шаг 7: Отчёт и развилка
 
-Выведи rendered verdict (как есть — не перефразируй и не резюмируй) + пути к сохранённым артефактам:
+Сначала — блок «Коротко» (3–5 строк для человека, по правилам `references/plain-language.md`; прочитать файл, если ещё не читал в этой сессии), затем rendered verdict как есть (не перефразируй и не резюмируй) и пути к артефактам.
+
+Блок «Коротко» строится из `$MERGED_OUT`:
+
+```
+Коротко: {нужны правки | можно делать | план ненадёжен} — {N} сырых находок от {k} проверяющих (до склейки дубликатов), из них {M} серьёзных (critical/high).
+1. {самая серьёзная находка одной строкой, простыми словами — что не так и что сломается}
+2. {вторая}
+3. {третья}
+```
+
+`consensus.verdict` → «нужны правки» (needs-revision) / «можно делать» (approve) / «план ненадёжен» (unreliable). `N` — сумма `findings` всех веток merged; это число честно названо «сырым»: дедуп делается позже в Arb-1, и точное число проблем = число вопросов интервью. Три строки — по убыванию severity из объединённых findings; если две ветки явно описывают одну и ту же проблему — показать её один раз; при < 3 находок — сколько есть; при 0 — «Проблем не нашли». Только пересказ `title`/`body` находок, без новых фактов. Строка деградации — из состояния пайплайна, не из merged: `GROK_PARTICIPATED=0` → «Не участвовал: Grok (обрыв — {что видел: пустой ответ / exit≠0 / таймаут})»; stub-провайдер в merged (`⚠ СБОЙ` в рендере) → «Не участвовал: {провайдер} (сбой — ответ не JSON)».
+
+Rendered verdict и пути:
 
 ```
 Артефакты сохранены:
@@ -342,12 +355,14 @@ claude -p "$(cat "{ARBITER_PROMPT_FILE}")" \
   --effort high \
   --output-format json \
   --json-schema "$(cat "{ARBITER_SCHEMA_PATH}")" \
-  --append-system-prompt "$(cat "{ARBITER_SYSTEM_PROMPT}")" \
+  --append-system-prompt "$(cat "{ARBITER_SYSTEM_PROMPT}" "{PLAIN_RULES}")" \
   --allowedTools "Read,Grep,Glob" \
   < /dev/null > "{ARBITER_OUT}.raw" 2>&1
 ```
 
 Сообщи: "Арбитр (Fable 5) оценивает {N} находок..."
+
+`{PLAIN_RULES}` дописывается вторым файлом в system prompt: арбитр заполняет `plain.*` (шесть полей для человека) по тем же правилам, по которым главный тред строит вопросы интервью. `plain` намеренно не в `required` схемы: если арбитр его не заполнил у какого-то id — судейство этого id берётся, plain-поля дописывает главный тред (частичный fallback в `interview-apply.md`).
 
 ### Arb-3. Нормализация и деградация
 
@@ -365,7 +380,7 @@ else
 fi
 ```
 
-- Сбой (exit != 0 / нет `.structured_output.assessments`) → **один foreground retry**; при повторном сбое `ARBITER_AVAILABLE=0` — интервью идёт по старой эвристике A3-fallback, пайплайн жив. Сообщи пользователю о деградации.
+- Сбой (exit != 0 / нет `.structured_output.assessments`) → **один foreground retry**; при повторном сбое `ARBITER_AVAILABLE=0` — интервью идёт по эвристике A3-fallback (главный тред сам пишет plain-поля по `plain-language.md`), пайплайн жив. Сообщи пользователю по-русски и просто: «Арбитр не ответил — вопросы будут без его оценки».
 - Рассинхрон id: оценки с id, которых нет в findings.json — игнорировать; findings без оценки — обрабатывать по эвристике A3-fallback.
 
 ## Фазы A и B: интервью по находкам и применение правок
@@ -377,8 +392,8 @@ guard против галлюцинаций, фиксация решений) и
 ## Ошибки и fallbacks
 
 - **Background Bash exit != 0** — notification содержит exit code. Прочитать output файл для диагностики. `merge_verdicts.sh` увидит невалидный JSON → `unreliable` stub. Покажи пользователю tail stderr + предложи `/codex:setup` (auth issues) или `/codex:rescue`.
-- **Fable: цепочка моделей** `claude-fable-5` → `claude-opus-5`. Переключение вниз: (а) unknown model / модель отвергнута; (б) context-overflow post-run (ошибка про превышение контекста в output) → перезапуск Bash B на следующей модели цепочки. Арбитр наследует резолвнутую `FABLE_MODEL`.
-- **Fable exit != 0 или bad JSON** — `$FABLE_OUT` либо plain-text ошибка, либо headless-envelope без извлекаемого вердикта (в т.ч. `stop_reason: refusal` на security-фокусных прогонах — для Fable 5 это ожидаемый режим отказа, при нём перезапуск на claude-opus-5). Если каскад Шага 6 ничего не извлёк — stub unreliable. Покажи `cat "$FABLE_OUT"` для диагностики.
+- **Fable: цепочка моделей** `claude-fable-5-1` → `claude-opus-5`. Переключение вниз: (а) unknown model / модель отвергнута; (б) context-overflow post-run (ошибка про превышение контекста в output) → перезапуск Bash B на следующей модели цепочки. Арбитр наследует резолвнутую `FABLE_MODEL`.
+- **Fable exit != 0 или bad JSON** — `$FABLE_OUT` либо plain-text ошибка, либо headless-envelope без извлекаемого вердикта (в т.ч. `stop_reason: refusal` на security-фокусных прогонах — для Fable это ожидаемый режим отказа, при нём перезапуск на claude-opus-5). Если каскад Шага 6 ничего не извлёк — stub unreliable. Покажи `cat "$FABLE_OUT"` для диагностики.
 - **Grok-сбой** — один foreground retry того же Bash C (timeout 600000); при повторном сбое `GROK_PARTICIPATED=0`, сообщить о деградации в dual. Отсутствие Grok в merge ≠ unreliable. НЕ фоллбэчить на `mcp__grok-mcp` — это платный xAI API, кредиты исчерпаны.
 - **Арбитр-сбой** — один retry → интервью по A3-fallback эвристике. Пайплайн не падает.
 - **Все верификаторы crashed** — `consensus.verdict = unreliable`. Пайплайн сломан — диагностировать через raw output файлы. Интервью не запускать.

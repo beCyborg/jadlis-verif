@@ -1,6 +1,6 @@
-# TESTS.md — verif (v6)
+# TESTS.md — verif (v6.1)
 
-Живые зависимости: `codex` CLI (ChatGPT-подписка), `claude` CLI (headless), `grok` CLI (X-подписка), jq.
+Живые зависимости: `codex` CLI (ChatGPT-подписка), `claude` CLI (headless), `grok` CLI (X-подписка), jq, python3 (fallback-парсер склеенного `.text` Grok в normalize_and_merge.sh).
 
 | Capability | State | Last run | Notes |
 |---|---|---|---|
@@ -16,12 +16,18 @@
 | render_merged.sh: динамический рендер по providers | PASS | 2026-07-02 | 3 и 2 провайдера |
 | Арбитр: arbiter.json schema + arbiter.md на Fable 5 | PASS | 2026-07-02 | синтетические находки; оба F-id покрыты; выявил stdin-warning баг → `< /dev/null` |
 | big-file guard (>350 KB → claude-opus-5) | PASS | 2026-07-02 | bash-логика на 400KB файле |
-| Codex e2e (gpt-5.6-sol, --output-schema, xhigh, service_tier=default) | PASS | 2026-07-10 | ВАЖНО: exec пишет лог в stdout, verdict — ПОСЛЕДНЕЙ строкой → нормализация tail -1 (источник старых codex.clean.json). Смоук на codex-cli 0.144.1: валидный verdict за ~10s |
+| Codex e2e (gpt-5.6-sol, --output-schema, xhigh, service_tier=default; локально priority — пин 15.08) | PASS | 2026-07-10 | ВАЖНО: exec пишет лог в stdout, verdict — ПОСЛЕДНЕЙ строкой → нормализация tail -1 (источник старых codex.clean.json). Смоук на codex-cli 0.144.1: валидный verdict за ~10s |
 | Полный тройной e2e: 3 верификатора → merge → render на реальном плане | PASS | 2026-07-02 | precious-strolling-hopper: 6+10+9 находок, дедуп 25→21, consensus needs-revision |
 | Арбитр e2e на реальных находках (21 F-id, анонимизация A/B/C) | PASS | 2026-07-02 | 21/21 покрытие, 0 лишних id; калибровка severity вниз; 1 refuted с контр-доказательством; спор codex --search разрешён локальной перепроверкой |
 | Grok-деградация: сбой детектится (exit 1, лог вместо JSON) → dual-merge без stub | PASS | 2026-07-02 | битый auth → exit 1; dual-merge codex+fable: providers=[codex,fable], grok отсутствует |
 | --only grok single-рендер | PASS | 2026-07-02 | direct render без merge на e2e-артефакте |
 | Fable fallback-цепочка (claude-opus-5 с производной схемой) | CODED-NOT-VERIFIED | — | opus без стрипа падал (как и Fable); со стрипом не гонялся |
+| Арбитр v6.1: поле `plain` (6 подполей) заполнено на синтетике, по-русски | PASS | 2026-08-21 | 2 синтетические находки (Redis-план) → Arb-2 с `cat arbiter.md plain-language.md` → 31 с, `.structured_output.assessments[].plain` — все 6 полей, русский, термин с пояснением («Redis (хранилище кэша)»); speculation → discuss/low |
+| Интервью v6.1: вопросы по новому формату (5 строк, plain.*) на реальном прогоне | PASS | 2026-08-21 | skill-zany-prism (dual: Grok выбыл 2× 1-ходовым пустым ответом): «Коротко» перед отчётом; 13 вопросов × 5 строк, все по-русски; Codex+Fable findings по-русски; арбитр 168 с на 13 находок (vs 2–3 мин на 15–20 до v6.1); decisions.json как раньше. Пользователь: 6/6 apply принял, 4/4 skip принял, discuss 2→apply 1→skip |
+| Арбитр v6.1: `refuted:true` на синтетике → `plain.problem` начинается с «Похоже, это не ошибка», вопрос получает 6-ю строку-предупреждение | PASS | 2026-08-21 | синтетика Redis-план, 2 находки (одна ложная: «нет TTL» при TTL в плане) → 29 с; refuted=true с цитатой строки, plain.problem начинается правильно; `plain` НЕ в required, но заполнен у обоих id; risk_of_fix содержательный у обоих (после F6) |
+| Plain-lint: запрещённые термины в `plain.*` арбитра (регрессия языка) | PASS | 2026-08-21 | `jq -r '.assessments[].plain \| .[]' AI/verif/<BASE>--arbiter.json \| grep -iE -c 'инвариант\|семантик\|персист\|детерминир\|калибров\|валидн\|артефакт\|гейт\|recall\|precision\|эмбеддинг\|payload\|идемпотент\|регресси\|дихотоми\|нормирован\|фоллбэк\|пайплайн'` → критерий 0; попадание с пояснением в скобках — допустимо, записать (прогон 21.08 skill-zany-prism: 1 попадание «пайплайна (цепочки шагов)» — с пояснением). Английские слова НЕ ловить — ложно срабатывает на именах файлов и команд |
+| Калибровка арбитра: доля `skip`-рекомендаций, перевёрнутых пользователем в «Исправить» (контроль, что сдвиг в skip не глушит реальные находки) | PENDING | — | замер после 3–5 прогонов v6.1: `jq '[.[] \| select(.arbiter_recommendation=="skip")] \| map(.decision) \| group_by(.) \| map({k:.[0],n:length})' AI/verif/*--decisions.json`; при росте переворотов > 15 % — убрать цифру «0 %» из arbiter.md |
+| render_merged.sh: ⚠ НЕ УЧАСТВОВАЛ / ⚠ СБОЙ | PASS | 2026-08-21 | реальный merged piped-clock (без grok) → «⚠ НЕ УЧАСТВОВАЛ: grok»; синтетика `{}` codex → «⚠ СБОЙ: codex (ответ не JSON)» |
 
 ## Gate
 

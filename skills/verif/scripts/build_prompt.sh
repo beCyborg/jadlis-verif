@@ -44,7 +44,7 @@ fi
 # Default focus when caller omits it
 : "${FOCUS:=general adversarial review}"
 
-# Escape replacements for awk's gsub (backslashes and ampersands are special)
+# Escape replacements for sed's s/// (backslashes, ampersands and the / delimiter are special)
 escape_for_sub() {
   printf '%s' "$1" | sed -e 's/[\&/]/\\&/g'
 }

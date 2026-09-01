@@ -21,6 +21,7 @@ FINDING CATEGORIES (use in findings[].category):
 
 OUTPUT CONTRACT:
 Follow the policies in AGENTS.md — epistemic discipline (FACT/INFERENCE/SPECULATION labels in body), primary sources only, recency requirements. Emit ONLY JSON matching the --output-schema contract.
+Write `summary`, `title`, `body`, `recommendation`, `next_steps` in Russian. Keep identifiers, file paths, commands, URLs and quoted source text verbatim. The FACT/INFERENCE/SPECULATION label stays as is.
 
 For each finding: write the gap and its evidence chain FIRST, then assign severity based on what you wrote — not the other way around. If your confidence in a finding is below 0.3, omit the finding entirely rather than padding the report.
 

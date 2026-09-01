@@ -33,11 +33,18 @@ jq -r '
       | (if length == 0 then ["  (none)"] else . end)
       | join("\n"));
 
+  # Stub-провайдер: merge_verdicts.sh подставляет его вместо нераспознанного ответа
+  def is_stub(v): (v.summary // "" | test("produced no valid JSON output")) and ((v.findings // []) | length == 0);
+
   . as $m
   | (.consensus.providers // (keys - ["consensus"])) as $labels
+  # Явные пометки деградации: раньше выбывший Grok исчезал из verdict.md без следа (прогон 21.08)
+  | ((["codex","fable","grok"] - $labels) | map("⚠ НЕ УЧАСТВОВАЛ: \(.)")) as $absent
+  | ($labels | map(select(is_stub($m[.])) | "⚠ СБОЙ: \(.) (ответ не JSON)")) as $stubs
   | "VERDICT: \(.consensus.verdict | ascii_upcase)\n" +
     "RULE: \(.consensus.rule)\n" +
     "PROVIDERS: \($labels | join(", "))\n" +
+    (($absent + $stubs) | map(. + "\n") | join("")) +
     "DISAGREEMENT: \(.consensus.disagreement)\n\n" +
     ($labels | map(block(.; $m[.])) | join("\n\n")) + "\n\n" +
     "NEXT STEPS (union):\n" +
