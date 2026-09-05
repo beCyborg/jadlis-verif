@@ -34,7 +34,7 @@
                                   разворачиваются сюда при первом запуске)
 ├── codex-home/
 │   ├── AGENTS.md                (Codex verifier policy: FACT/INFERENCE/SPECULATION)
-│   ├── config.toml              (единый профиль GPT-5.6 Sol, xhigh; service_tier=default в плагине;
+│   ├── config.toml              (единый профиль GPT-6 Astra, xhigh; service_tier=default в плагине;
 │   │                             локальный пин priority — настройка получателя)
 │   └── auth.json                (symlink на ~/.codex/auth.json)
 └── grok-home/

@@ -1,13 +1,13 @@
 ---
 name: verif
-description: Triple adversarial верификация — Codex (GPT-5.6 Sol) + Claude Fable 5 + Grok (grok-4.6) параллельно. Проверяет факты через search, оспаривает решения, находит пропущенные риски. После merge — этап Арбитра (Fable 5 судит дедуплицированные находки, кросс-чекает провайдеров, помечает опровергнутые), затем батч-интервью по находкам с рекомендациями арбитра и параллельное применение одобренных правок субагентами. Для single-provider — флаг --only codex|fable|grok; --report-only / --json — отчёт без интервью. TRIGGER when — user says "/jadlis-research:verif", "/verif", "верифицируй план", "проверь план перед имплементацией", "adversarial review плана", "verify plan", "проверь ресерч на факты", "фактчек документа". DO NOT TRIGGER when — ревью кода/diff (use /code-review), полное исследование темы (use /jadlis-research:full-research), быстрый фактчек одного утверждения (use /jadlis-research:search).
+description: Triple adversarial верификация — Codex (GPT-6 Astra) + Claude Fable 5 + Grok (grok-4.6) параллельно. Проверяет факты через search, оспаривает решения, находит пропущенные риски. После merge — этап Арбитра (Fable 5 судит дедуплицированные находки, кросс-чекает провайдеров, помечает опровергнутые), затем батч-интервью по находкам с рекомендациями арбитра и параллельное применение одобренных правок субагентами. Для single-provider — флаг --only codex|fable|grok; --report-only / --json — отчёт без интервью. TRIGGER when — user says "/jadlis-research:verif", "/verif", "верифицируй план", "проверь план перед имплементацией", "adversarial review плана", "verify plan", "проверь ресерч на факты", "фактчек документа". DO NOT TRIGGER when — ревью кода/diff (use /code-review), полное исследование темы (use /jadlis-research:full-research), быстрый фактчек одного утверждения (use /jadlis-research:search).
 argument-hint: "[focus] [--file <path>] [--type plan|research|doc] [--only codex|fable|grok] [--report-only] [--json]"
 allowed-tools: Read, Glob, Write, Edit, MultiEdit, AskUserQuestion, Task, Agent, Bash(codex:*), Bash(claude:*), Bash(grok:*), Bash(mktemp:*), Bash(cat:*), Bash(ls:*), Bash(jq:*), Bash(rm:*), Bash(trap:*), Bash(grep:*), Bash(echo:*), Bash(ln:*), Bash(bash:*), Bash(test:*), Bash(chmod:*), Bash(mkdir:*), Bash(date:*), Bash(sed:*), Bash(wc:*), Bash(stat:*)
 ---
 
 # /verif — Triple adversarial верификация (Codex + Fable 5 + Grok) с арбитром
 
-Тонкий orchestrator трёх независимых верификаторов: OpenAI GPT-5.6 Sol через `codex exec`, Anthropic Claude Fable 5 через `claude -p` (headless), xAI grok-4.6 (high effort) через `grok --prompt-file` (подписочный CLI, $0). Все возвращают JSON по единой `schema/verdict.json`. Результаты сливаются через `scripts/merge_verdicts.sh` (strict hierarchy: unreliable > needs-revision > approve, N провайдеров с метками) и рендерятся через `scripts/render_merged.sh`.
+Тонкий orchestrator трёх независимых верификаторов: OpenAI GPT-6 Astra через `codex exec`, Anthropic Claude Fable 5 через `claude -p` (headless), xAI grok-4.6 (high effort) через `grok --prompt-file` (подписочный CLI, $0). Все возвращают JSON по единой `schema/verdict.json`. Результаты сливаются через `scripts/merge_verdicts.sh` (strict hierarchy: unreliable > needs-revision > approve, N провайдеров с метками) и рендерятся через `scripts/render_merged.sh`.
 
 Provider-agnostic policy — `${CLAUDE_PLUGIN_DATA}/verif-homes/codex-home/AGENTS.md` для Codex, `system-prompts/fable-verifier.md` для Fable, `${CLAUDE_PLUGIN_DATA}/verif-homes/grok-home/AGENTS.md` для Grok (разворачиваются из `${CLAUDE_PLUGIN_ROOT}/assets/verif-homes/` при первом запуске). Templates — `prompts/{plan,research,doc}.md`.
 
@@ -47,9 +47,14 @@ Read target. Если `--type` не указан:
 
 - **Default (triple):** Codex + Fable + Grok параллельно (три `Bash(run_in_background: true)`
   в одном сообщении) → notifications → merge + render → Арбитр → Фаза A → Фаза B.
+- **Default при `GROK_AVAILABLE=0`** (probe из Шага 4 отсёк Grok): dual Codex + Fable,
+  Bash C не запускается, `GROK_PARTICIPATED=0`. Merge это уже поддерживает — отдельного
+  флага не нужно. Сообщи: «Grok недоступен (402 usage balance exhausted) — режим dual
+  Codex + Fable; ветка вернётся сама после пополнения баланса».
 - **`--only codex|fable|grok`:** соответствующий Bash в одиночку, рендер single-verifier
   (Шаг 7), без арбитра и интервью. Grok в этом режиме без retry-деградации: при сбое
-  просто показать ошибку.
+  просто показать ошибку. `--only grok` при `GROK_AVAILABLE=0` — не запускать вовсе:
+  «Grok недоступен (402) — используй `--only codex|fable`» и стоп.
 
 ## Шаг 4: Synchronous prelude — подготовка
 
@@ -96,13 +101,27 @@ fi
 # Hardcoded settings
 EFFORT_CODEX="xhigh"
 EFFORT_FABLE="high"
-CODEX_MODEL="gpt-5.6-sol"
+CODEX_MODEL="gpt-6-astra"   # GPT-6 Astra с 05.09.2026; effort остаётся xhigh — `ultra` = авто-делегирование подзадач, для одиночного верификатора не нужен; откат = `gpt-5.6-sol` (в каталоге жив)
 GROK_MODEL="grok-4.6"     # frontier-модель подписки (500K ctx); effort: low|medium|high|xhigh, high = дефолт
 
 # Выбор Fable-модели: Fable 5.1 — 1M-контекст нативно, big-file guard снят 01.09.2026.
 FABLE_MODEL_PRIMARY="claude-fable-5-1"
 FABLE_MODEL_FALLBACK="claude-opus-5"
 FABLE_MODEL="$FABLE_MODEL_PRIMARY"
+
+# Probe живости Grok. Баланс подписки Grok Build кончается независимо от Claude
+# (03-04.09.2026 — сплошные `API error (status 402 Payment Required): Grok Build usage
+# balance exhausted`; 05.09 пополнен). Без probe Bash C стартует, мгновенно падает и
+# тратит foreground-retry впустую. Стоимость probe $0; 402 приходит за ~0,6 с, живой
+# ответ 5-10 с. Судим ТОЛЬКО по grep: ненулевой exit и `Error: max turns reached` —
+# штатный обрыв живого ответа на первом tool-call, не признак смерти.
+GROK_PROBE=$(HOME="$GROK_ISO_HOME" GROK_HOME="$GROK_HOME_DIR" "$GROK_BIN" \
+  -p 'ok' -m "$GROK_MODEL" --effort low --max-turns 1 2>&1 | head -20 || true)
+if echo "$GROK_PROBE" | grep -qiE '402|balance exhausted|Payment Required|unauthenticated'; then
+  GROK_AVAILABLE=0
+else
+  GROK_AVAILABLE=1
+fi
 
 # Claude-совместимая производная схема: structured outputs Anthropic не поддерживает
 # minLength/minimum/maximum и мета-ключи корня ($schema/$id/title/description) — с ними
@@ -169,6 +188,7 @@ echo "  CODEX_HOME_DIR=$CODEX_HOME_DIR"
 echo "  GROK_HOME_DIR=$GROK_HOME_DIR"
 echo "  GROK_ISO_HOME=$GROK_ISO_HOME"
 echo "  GROK_BIN=$GROK_BIN"
+echo "  GROK_AVAILABLE=$GROK_AVAILABLE"
 echo "  FABLE_SYSTEM_PROMPT=$FABLE_SYSTEM_PROMPT"
 echo "  ARBITER_SYSTEM_PROMPT=$ARBITER_SYSTEM_PROMPT"
 echo "  PLAIN_RULES=$PLAIN_RULES"
@@ -176,7 +196,7 @@ echo "  PLAIN_RULES=$PLAIN_RULES"
 
 ## Шаг 5: Запуск верификаторов через Bash(run_in_background)
 
-Три `Bash(run_in_background: true)` вызова — в **одном сообщении**, иначе они выполнятся последовательно и прогон растянется втрое. При `--only` — один Bash.
+Три `Bash(run_in_background: true)` вызова — в **одном сообщении**, иначе они выполнятся последовательно и прогон растянется втрое. При `--only` — один Bash. При `GROK_AVAILABLE=0` — два (A и B), Bash C пропускается.
 
 Каждый Bash — фоновый процесс с отдельным completion notification. В системе нет команды `timeout` — предельное время задаёт timeout самого Bash-инструмента (600000 мс на вызов).
 
@@ -227,7 +247,7 @@ HOME="{GROK_ISO_HOME}" GROK_HOME="{GROK_HOME_DIR}" "{GROK_BIN}" \
 
 ВАЖНО про Grok: `--effort high` передаём явно (grok-4.6 поддерживает `low|medium|high|xhigh`; high и так дефолт, но пин защищает от смены дефолта на стороне xAI); `HOME="{GROK_ISO_HOME}"` обязателен — иначе Grok читает `~/.claude/settings.json` и его `permissions.deny: ["WebFetch"]` глушит `web_fetch` («Denied by permission policy»), верификатор остаётся без чтения первоисточников; `--allow web_fetch` и `GROK_WEB_FETCH=1` НЕ помогают (deny > allow, проверено 2026-07-10); `--sandbox read-only` НЕ использовать (блокирует сеть → ломает web_search); изоляция — через allowlist `--tools` + запрет `run_terminal_cmd`. `--max-turns 300` — заведомо недостижимый потолок (при 30 Grok упирался в него до выдачи structured output; флаг оставлен явно, т.к. дефолт CLI без него не документирован); реальный backstop от зависания — timeout Bash-инструмента 600000 мс. Allowlist из одного `web_search` ломает сборку агента — использовать ровно указанный набор.
 
-Сообщи пользователю: "Верификаторы запущены параллельно (Codex GPT-5.6 Sol + Fable 5 + Grok). Результаты будут появляться по мере завершения..."
+Сообщи пользователю: "Верификаторы запущены параллельно (Codex GPT-6 Astra + Fable 5 + Grok). Результаты будут появляться по мере завершения..." — при `GROK_AVAILABLE=0` перечисли только запущенные ветки (Codex + Fable) и назови причину пропуска Grok.
 
 ### Обработка notifications
 
@@ -394,7 +414,7 @@ guard против галлюцинаций, фиксация решений) и
 - **Background Bash exit != 0** — notification содержит exit code. Прочитать output файл для диагностики. `merge_verdicts.sh` увидит невалидный JSON → `unreliable` stub. Покажи пользователю tail stderr + предложи `/codex:setup` (auth issues) или `/codex:rescue`.
 - **Fable: цепочка моделей** `claude-fable-5-1` → `claude-opus-5`. Переключение вниз: (а) unknown model / модель отвергнута; (б) context-overflow post-run (ошибка про превышение контекста в output) → перезапуск Bash B на следующей модели цепочки. Арбитр наследует резолвнутую `FABLE_MODEL`.
 - **Fable exit != 0 или bad JSON** — `$FABLE_OUT` либо plain-text ошибка, либо headless-envelope без извлекаемого вердикта (в т.ч. `stop_reason: refusal` на security-фокусных прогонах — для Fable это ожидаемый режим отказа, при нём перезапуск на claude-opus-5). Если каскад Шага 6 ничего не извлёк — stub unreliable. Покажи `cat "$FABLE_OUT"` для диагностики.
-- **Grok-сбой** — один foreground retry того же Bash C (timeout 600000); при повторном сбое `GROK_PARTICIPATED=0`, сообщить о деградации в dual. Отсутствие Grok в merge ≠ unreliable. НЕ фоллбэчить на `mcp__grok-mcp` — это платный xAI API, кредиты исчерпаны.
+- **Grok-сбой** — один foreground retry того же Bash C (timeout 600000); при повторном сбое `GROK_PARTICIPATED=0`, сообщить о деградации в dual. **Ретрая нет, если ветку отсёк probe** (`GROK_AVAILABLE=0`): Bash C вообще не запускался, а на 402 повторный вызов гарантированно тратит ход впустую. Отсутствие Grok в merge ≠ unreliable. НЕ фоллбэчить на `mcp__grok-mcp` — это платный xAI API, кредиты исчерпаны.
 - **Арбитр-сбой** — один retry → интервью по A3-fallback эвристике. Пайплайн не падает.
 - **Все верификаторы crashed** — `consensus.verdict = unreliable`. Пайплайн сломан — диагностировать через raw output файлы. Интервью не запускать.
 - **Один верификатор упал** (stub unreliable) — интервью идёт по находкам выживших веток.
