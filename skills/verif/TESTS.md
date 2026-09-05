@@ -17,6 +17,7 @@
 | Арбитр: arbiter.json schema + arbiter.md на Fable 5 | PASS | 2026-07-02 | синтетические находки; оба F-id покрыты; выявил stdin-warning баг → `< /dev/null` |
 | big-file guard (>350 KB → claude-opus-5) | PASS | 2026-07-02 | bash-логика на 400KB файле |
 | Codex e2e (gpt-5.6-sol, --output-schema, xhigh, service_tier=default; локально priority — пин 15.08) | PASS | 2026-07-10 | ВАЖНО: exec пишет лог в stdout, verdict — ПОСЛЕДНЕЙ строкой → нормализация tail -1 (источник старых codex.clean.json). Смоук на codex-cli 0.144.1: валидный verdict за ~10s |
+| Codex e2e (gpt-6-astra, --output-schema, xhigh, service_tier=default) | PENDING | — | пин 05.09.2026 без смоука: недельная квота Codex 97 %, сброс 07.09 12:14 CEST. Критерии PASS: EXIT=0 без usage-limit; verdict — последней строкой stdout, `tail -1 \| jq .verdict` непустой; findings по `schema/verdict.json`; prelude печатает `CODEX_MODEL=gpt-6-astra` |
 | Полный тройной e2e: 3 верификатора → merge → render на реальном плане | PASS | 2026-07-02 | precious-strolling-hopper: 6+10+9 находок, дедуп 25→21, consensus needs-revision |
 | Арбитр e2e на реальных находках (21 F-id, анонимизация A/B/C) | PASS | 2026-07-02 | 21/21 покрытие, 0 лишних id; калибровка severity вниз; 1 refuted с контр-доказательством; спор codex --search разрешён локальной перепроверкой |
 | Grok-деградация: сбой детектится (exit 1, лог вместо JSON) → dual-merge без stub | PASS | 2026-07-02 | битый auth → exit 1; dual-merge codex+fable: providers=[codex,fable], grok отсутствует |
