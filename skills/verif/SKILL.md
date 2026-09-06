@@ -411,7 +411,7 @@ guard против галлюцинаций, фиксация решений) и
 
 ## Ошибки и fallbacks
 
-- **Background Bash exit != 0** — notification содержит exit code. Прочитать output файл для диагностики. `merge_verdicts.sh` увидит невалидный JSON → `unreliable` stub. Покажи пользователю tail stderr + предложи `/codex:setup` (auth issues) или `/codex:rescue`.
+- **Background Bash exit != 0** — notification содержит exit code. Прочитать output файл для диагностики. `merge_verdicts.sh` увидит невалидный JSON → `unreliable` stub. Покажи пользователю tail stderr + диагностику CLI: `codex login status` (auth) и `codex exec -m gpt-6-astra "ping" < /dev/null` (живость модели).
 - **Fable: цепочка моделей** `claude-fable-5-1` → `claude-opus-5`. Переключение вниз: (а) unknown model / модель отвергнута; (б) context-overflow post-run (ошибка про превышение контекста в output) → перезапуск Bash B на следующей модели цепочки. Арбитр наследует резолвнутую `FABLE_MODEL`.
 - **Fable exit != 0 или bad JSON** — `$FABLE_OUT` либо plain-text ошибка, либо headless-envelope без извлекаемого вердикта (в т.ч. `stop_reason: refusal` на security-фокусных прогонах — для Fable это ожидаемый режим отказа, при нём перезапуск на claude-opus-5). Если каскад Шага 6 ничего не извлёк — stub unreliable. Покажи `cat "$FABLE_OUT"` для диагностики.
 - **Grok-сбой** — один foreground retry того же Bash C (timeout 600000); при повторном сбое `GROK_PARTICIPATED=0`, сообщить о деградации в dual. **Ретрая нет, если ветку отсёк probe** (`GROK_AVAILABLE=0`): Bash C вообще не запускался, а на 402 повторный вызов гарантированно тратит ход впустую. Отсутствие Grok в merge ≠ unreliable. НЕ фоллбэчить на `mcp__grok-mcp` — это платный xAI API, кредиты исчерпаны.
