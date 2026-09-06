@@ -40,6 +40,27 @@ if [[ -s "$CODEX_OUT" ]] && jq -e '.verdict' "$CODEX_OUT" >/dev/null 2>&1; then
   jq . "$CODEX_OUT" > "$CODEX_VERDICT"
 elif [[ -s "$CODEX_OUT" ]] && tail -1 "$CODEX_OUT" | jq -e '.verdict' >/dev/null 2>&1; then
   tail -1 "$CODEX_OUT" > "$CODEX_VERDICT"
+elif [[ -s "$CODEX_OUT" ]] && python3 -c '
+# GPT-6 Astra (2026-09-05) печатает финальный verdict МНОГОСТРОЧНЫМ JSON после лога прогона,
+# а не одной последней строкой, как GPT-5.6 Sol: обе ступени выше дают FAIL и verdict молча
+# превращался в stub unreliable. Сканируем с конца файла и берём последний валидный объект
+# с полем verdict (тот же приём, что для склеенных ответов Grok ниже).
+import json, sys
+raw = open(sys.argv[1], encoding="utf-8", errors="ignore").read()
+dec = json.JSONDecoder()
+for i in range(len(raw) - 1, -1, -1):
+    if raw[i] != "{":
+        continue
+    try:
+        obj, _ = dec.raw_decode(raw[i:])
+    except Exception:
+        continue
+    if isinstance(obj, dict) and obj.get("verdict"):
+        json.dump(obj, open(sys.argv[2], "w", encoding="utf-8"), ensure_ascii=False)
+        sys.exit(0)
+sys.exit(1)
+' "$CODEX_OUT" "$CODEX_VERDICT" 2>/dev/null; then
+  :
 else
   echo '{}' > "$CODEX_VERDICT"
 fi
