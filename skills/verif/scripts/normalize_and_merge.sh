@@ -13,6 +13,9 @@
 #           с полем verdict.
 # Не распознали — пишем '{}', merge превратит его в stub unreliable (провайдер молчит,
 # а не «согласен»).
+# Отдельный класс сбоя Grok: прогон завершается за один ход «заготовкой» JSON, эмитнутой
+# ДО tool-call'ов (num_turns<=1, findings пустой, summary «Читаю план…»). По схеме она валидна,
+# и без гварда ниже в merged попадает «needs-revision, 0 findings» — консенсус искажён, сбой спрятан.
 #
 # Вход — переменные окружения:
 #   CODEX_OUT FABLE_OUT GROK_OUT   сырые stdout-файлы верификаторов
@@ -123,6 +126,16 @@ print(json.dumps(last, ensure_ascii=False))
   else
     echo '{}' > "$GROK_VERDICT"
   fi
+
+  # Гвард «пустого вердикта за один ход» (зафиксировано 2026-08-21 и 2026-09-05 на grok-4.6, CLI 1.0.3):
+  # num_turns <= 1 И findings == [] — это сбой, а не вердикт. Обнуляем в '{}', merge сделает stub
+  # unreliable; лечение — retry (можно в фоне, параллельно с идущими Codex/Fable).
+  GROK_TURNS=$(jq -r '.num_turns // empty' "$GROK_ENV" 2>/dev/null || true)
+  GROK_FINDINGS=$(jq '(.findings // []) | length' "$GROK_VERDICT" 2>/dev/null || true)
+  if [[ "$GROK_TURNS" =~ ^[0-9]+$ ]] && (( GROK_TURNS <= 1 )) && [[ "${GROK_FINDINGS:-}" == "0" ]]; then
+    echo '{}' > "$GROK_VERDICT"
+  fi
+
   MERGE_ARGS+=("grok:$GROK_VERDICT")
 fi
 
