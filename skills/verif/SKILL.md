@@ -73,6 +73,11 @@ GROK_HOME_DIR="$VERIF_HOMES/grok-home"
 GROK_BIN="$HOME/.grok/bin/grok"
 
 # First-run deploy шаблонов (идемпотентно: существующие файлы не перетираем)
+# ⚠️ Обратная сторона идемпотентности: при СМЕНЕ МОДЕЛИ рабочая копия
+# `$CODEX_HOME_DIR/config.toml` НЕ обновляется — ни этим блоком, ни рендером
+# личного контура. Иначе скилл утверждает одно, а config говорит другое.
+# После правки `CODEX_MODEL` всегда руками:
+#   cp "$VERIF_HOMES_TEMPLATE/codex-home/config.toml" "$CODEX_HOME_DIR/config.toml"
 mkdir -p "$CODEX_HOME_DIR" "$GROK_HOME_DIR"
 for f in AGENTS.md config.toml; do
   [[ -e "$CODEX_HOME_DIR/$f" ]] || cp "$VERIF_HOMES_TEMPLATE/codex-home/$f" "$CODEX_HOME_DIR/$f"
