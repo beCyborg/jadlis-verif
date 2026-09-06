@@ -99,9 +99,9 @@ if [[ ! -e "$GROK_HOME_DIR/auth.json" ]]; then
 fi
 
 # Hardcoded settings
-EFFORT_CODEX="xhigh"
+EFFORT_CODEX="high"
 EFFORT_FABLE="high"
-CODEX_MODEL="gpt-6-astra"   # GPT-6 Astra с 05.09.2026; effort остаётся xhigh — `ultra` = авто-делегирование подзадач, для одиночного верификатора не нужен; откат = `gpt-5.6-sol` (в каталоге жив)
+CODEX_MODEL="gpt-6-astra"   # GPT-6 Astra с 05.09.2026; effort `high` с 06.09.2026 по ресёрчу «Effort для плана и кода» (выше high растут токены, не качество); `ultra` = авто-делегирование, не нужен; откат = `gpt-5.6-sol` (в каталоге жив)
 GROK_MODEL="grok-4.6"     # frontier-модель подписки (500K ctx); effort: low|medium|high|xhigh, high = дефолт
 
 # Выбор Fable-модели: Fable 5.1 — 1M-контекст нативно, big-file guard снят 01.09.2026.
