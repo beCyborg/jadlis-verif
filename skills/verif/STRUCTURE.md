@@ -3,7 +3,7 @@
 ```
 <plugin-root>/skills/verif/          (${CLAUDE_PLUGIN_ROOT})
 ├── SKILL.md                     (orchestration v6 — единственный файл, который читает рантайм)
-├── README.md                    (этот файл)
+├── STRUCTURE.md                 (этот файл)
 ├── TESTS.md                     (журнал проверок с датами)
 ├── system-prompts/
 │   ├── fable-verifier.md        (Fable policy — mirror AGENTS.md + «ignore CLAUDE.md»)
