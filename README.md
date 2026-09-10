@@ -6,12 +6,12 @@
 до того, как ты в план вложился.
 
 ```
-claude plugin marketplace add https://github.com/beCyborg/jadlis-start.git
-claude plugin install verif@jadlis
+claude plugin marketplace add https://github.com/beCyborg/jadlis-hub
+claude plugin install jadlis-verif@jadlis
 ```
 
-Ключи не нужны — это единственный в линии, кому не нужны Brave и Firecrawl. Нужны свои подписки:
-ChatGPT — под Codex CLI — и Grok.
+Ключи не нужны — это единственный в линии, кому не нужны Brave и Firecrawl. Нужна своя
+подписка ChatGPT — под Codex CLI; подписка Grok необязательна.
 
 ![Три колонки замечаний от трёх моделей и сведённый арбитром общий список находок](docs/img/hero-jadlis-verif.webp)
 
@@ -67,7 +67,7 @@ ChatGPT — под Codex CLI — и Grok.
 | Сводятся ли расхождения между разборами в один список | да, арбитром | да, отдельная модель-синтезатор в Model Council | в документации не нашёл | частично: ведущий агент сводит, списка расхождений нет |
 | Помечается ли спорное отдельно от совпавшего | да, совпавшее и одиночное разведены | да, показано, где модели сошлись и где разошлись | в документации не нашёл | в документации не нашёл |
 | Остаётся ли список находок с твоим решением по каждой | да, после батч-интервью | частично: находки по ходу, решения по ним нет | частично: правится план до запуска, не находки | в документации не нашёл |
-| Проверяются ли первоисточники в вебе | включается, если установлен `search` | да | да | да |
+| Проверяются ли первоисточники в вебе | включается, если установлен `jadlis-search` | да | да | да |
 
 Столбец плагина проверен 07.09.2026. Три чужих столбца собраны в тот же день по официальной
 документации: [Model Council](https://www.perplexity.ai/hub/blog/introducing-model-council) и
@@ -96,14 +96,15 @@ ChatGPT — под Codex CLI — и Grok.
 **а) Текст для вставки агенту.** Скопируй целиком в чат Claude Code:
 
 ```
-Ты — установщик. Поставь на этот Mac плагин verif из маркетплейса jadlis.
+Ты — установщик. Поставь на этот Mac плагин jadlis-verif из маркетплейса jadlis.
 Сначала проверь, что стоит Claude Code и подписка активна, и что на машине есть Codex CLI и
 Grok CLI. Скажи мне «есть» или «нет» по каждому — токены и содержимое конфигов не печатай.
-Нет хотя бы одного — остановись и скажи мне: наполовину это не работает.
+Нет Codex CLI — остановись и скажи мне: без него это не работает. Нет Grok CLI — ставь
+дальше: разбор пойдёт в режиме двух моделей, Codex и Fable.
 Дальше выполни ровно эти команды, дословно, ничего не сокращая:
-1. claude plugin marketplace add https://github.com/beCyborg/jadlis-start.git
-2. claude plugin install verif@jadlis
-3. claude plugin list — покажи мне строку про verif и его версию.
+1. claude plugin marketplace add https://github.com/beCyborg/jadlis-hub
+2. claude plugin install jadlis-verif@jadlis
+3. claude plugin list — покажи мне строку про jadlis-verif и его версию.
 Ключи API у меня не спрашивай: этому плагину они не нужны, и в конфиги ключей ничего не пиши.
 Перед каждой командой покажи её мне целиком и дождись «да». Сказал «нет» — не выполняй.
 Команда вернула ошибку — остановись, покажи вывод, к следующей не переходи.
@@ -112,13 +113,13 @@ Grok CLI. Скажи мне «есть» или «нет» по каждому �
 **б) Команды руками.**
 
 ```
-claude plugin marketplace add https://github.com/beCyborg/jadlis-start.git
-claude plugin install verif@jadlis
+claude plugin marketplace add https://github.com/beCyborg/jadlis-hub
+claude plugin install jadlis-verif@jadlis
 claude plugin list
 ```
 
 Первая команда ничего не ставит — она добавляет маркетплейс. Ставит только вторая, и снимается
-она одной строкой: `claude plugin uninstall verif@jadlis --keep-data`.
+она одной строкой: `claude plugin uninstall jadlis-verif@jadlis --keep-data`.
 
 **в) Короткая команда.** Открой Claude Code в папке, где лежит план, и набери:
 
@@ -134,14 +135,15 @@ claude plugin list
 **Чего не делает.** Не пишет план за тебя — только рвёт написанный. Не принимает решения по
 находкам: принять, отклонить или переписать говоришь ты, и в правки уходит только принятое.
 Не проверяет первоисточники в вебе сам по себе: веб-проверка включается дополнительно, если у
-тебя установлен `search`. И главное: совпадение трёх разборов — это совпадение трёх разборов, а
+тебя установлен `jadlis-search`. И главное: совпадение трёх разборов — это совпадение трёх разборов, а
 не доказательство. Арбитр показывает, где двое сошлись, а где остался один голос против двух;
 решение всё равно твоё.
 
-**Что нужно.** Ключи не нужны — это единственный в линии, кому не нужны Brave и Firecrawl. Нужны
-две свои подписки: ChatGPT — под Codex CLI — и Grok. Нет хотя бы одной — не ставь: наполовину это
-не работает, третьей рамки просто не будет. Проверено на Codex CLI 0.153.4 и Grok CLI 1.0.13
-(07.09.2026); ниже этих версий не проверял.
+**Что нужно.** Ключи не нужны — это единственный в линии, кому не нужны Brave и Firecrawl. Нужна
+одна своя подписка: ChatGPT — под Codex CLI. Подписка Grok необязательна: без неё разбор идёт в
+режиме двух моделей — Codex и Fable, — а третья рамка возвращается сама, как только Grok снова
+доступен. Проверено на Codex CLI 0.153.4 и Grok CLI 1.0.13 (07.09.2026); ниже этих версий не
+проверял.
 
 **Порядок расхода токенов.** Тяжёлый прогон — десятки субагентов из твоей квоты; несколько
 прогонов подряд в одно окно не помещаются. Часть работы уходит в твои подписки ChatGPT и Grok,
@@ -160,12 +162,12 @@ claude plugin list
 
 ```
 claude plugin marketplace update jadlis
-claude plugin update verif@jadlis
+claude plugin update jadlis-verif@jadlis
 claude plugin list
 ```
 
 Переустановка, если что-то встало криво:
 
 ```
-claude plugin uninstall verif@jadlis --keep-data && claude plugin install verif@jadlis
+claude plugin uninstall jadlis-verif@jadlis --keep-data && claude plugin install jadlis-verif@jadlis
 ```

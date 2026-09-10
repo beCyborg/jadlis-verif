@@ -6,12 +6,12 @@ Three models tear into it separately, none of them seeing the others' answers, a
 the findings into one list — before you have put anything into the plan.
 
 ```
-claude plugin marketplace add https://github.com/beCyborg/jadlis-start.git
-claude plugin install verif@jadlis
+claude plugin marketplace add https://github.com/beCyborg/jadlis-hub
+claude plugin install jadlis-verif@jadlis
 ```
 
 No keys needed — this is the only one in the line that does not need Brave and Firecrawl. What it
-does need is two subscriptions of your own: ChatGPT — for Codex CLI — and Grok.
+does need is one subscription of your own: ChatGPT — for Codex CLI; a Grok subscription is optional.
 
 ![Three columns of findings from three models and the arbiter's merged common list](docs/img/hero-jadlis-verif.webp)
 
@@ -68,7 +68,7 @@ A comparison of mechanisms only — not of who deserves your trust.
 | Are the divergences between the readings merged into one list | yes, by an arbiter | yes, a separate synthesiser model in Model Council | not documented | partly: a lead agent merges them, there is no list of divergences |
 | Is what is disputed marked apart from what was agreed | yes, agreed and single-voice findings are kept apart | yes, it shows where the models converged and where they diverged | not documented | not documented |
 | Does a list of findings with your decision on each one survive | yes, after the batch interview | partly: findings along the way, no decision on them | partly: the plan is edited before the run, not the findings | not documented |
-| Are primary sources checked on the web | switched on if `search` is installed | yes | yes | yes |
+| Are primary sources checked on the web | switched on if `jadlis-search` is installed | yes | yes | yes |
 
 The plugin column was checked on 2026-09-07. The three other columns were assembled the same day
 from official documentation: [Model Council](https://www.perplexity.ai/hub/blog/introducing-model-council)
@@ -98,15 +98,16 @@ list and on every finding you say: accept, reject, rewrite. Only what was accept
 **a) Text to paste to an agent.** Copy the whole thing into a Claude Code chat:
 
 ```
-You are the installer. Install the plugin verif from the jadlis marketplace on this Mac.
+You are the installer. Install the plugin jadlis-verif from the jadlis marketplace on this Mac.
 First check that Claude Code is installed and the subscription is active, and that Codex CLI and
 Grok CLI are on the machine. Tell me "present" or "absent" for each — never print tokens or the
 contents of config files.
-If even one is missing — stop and tell me: this does not work by halves.
+If Codex CLI is missing — stop and tell me: it does not work without it. If Grok CLI is
+missing — carry on: the review runs in dual mode, Codex and Fable.
 Then run exactly these commands, verbatim, shortening nothing:
-1. claude plugin marketplace add https://github.com/beCyborg/jadlis-start.git
-2. claude plugin install verif@jadlis
-3. claude plugin list — show me the line about verif and its version.
+1. claude plugin marketplace add https://github.com/beCyborg/jadlis-hub
+2. claude plugin install jadlis-verif@jadlis
+3. claude plugin list — show me the line about jadlis-verif and its version.
 Do not ask me for API keys: this plugin does not need them, and write no keys into any config.
 Before each command show it to me in full and wait for "yes". If I say "no", do not run it.
 If a command returns an error, stop, show me the output, and do not move to the next one.
@@ -115,13 +116,13 @@ If a command returns an error, stop, show me the output, and do not move to the 
 **b) Commands by hand.**
 
 ```
-claude plugin marketplace add https://github.com/beCyborg/jadlis-start.git
-claude plugin install verif@jadlis
+claude plugin marketplace add https://github.com/beCyborg/jadlis-hub
+claude plugin install jadlis-verif@jadlis
 claude plugin list
 ```
 
 The first command installs nothing — it adds the marketplace. Only the second one installs, and one
-line removes it: `claude plugin uninstall verif@jadlis --keep-data`.
+line removes it: `claude plugin uninstall jadlis-verif@jadlis --keep-data`.
 
 **c) The short command.** Open Claude Code in the folder where the plan lives and type:
 
@@ -137,15 +138,15 @@ not put anything into yet: the point is for the hole to open up before the money
 **What it does not do.** It does not write the plan for you — it only tears into the one written. It
 does not make the decisions on the findings: accept, reject or rewrite is yours to say, and only what
 was accepted goes into the edits. It does not check primary sources on the web by itself: the web
-check switches on additionally if you have `search` installed. And the main thing: three readings
+check switches on additionally if you have `jadlis-search` installed. And the main thing: three readings
 agreeing is three readings agreeing, not proof. The arbiter shows where two of them converged and
 where one voice was left against two; the decision is still yours.
 
 **What you need.** No keys — this is the only one in the line that does not need Brave and Firecrawl.
-What it does need is two subscriptions of your own: ChatGPT — for Codex CLI — and Grok. If even one
-is missing, do not install it: this does not work by halves, the third frame simply will not be
-there. Checked on Codex CLI 0.153.4 and Grok CLI 1.0.13 (2026-09-07); below those versions I have not
-tested it.
+What it does need is one subscription of your own: ChatGPT — for Codex CLI. A Grok subscription is
+optional: without it the review runs in dual mode — Codex and Fable — and the third frame comes back
+by itself as soon as Grok is available again. Checked on Codex CLI 0.153.4 and Grok CLI 1.0.13
+(2026-09-07); below those versions I have not tested it.
 
 **How tokens get spent.** A heavy run — dozens of subagents out of your own quota; several runs back
 to back do not fit into one window. Part of the work goes into your ChatGPT and Grok subscriptions,
@@ -164,12 +165,12 @@ first command you keep the version you installed.
 
 ```
 claude plugin marketplace update jadlis
-claude plugin update verif@jadlis
+claude plugin update jadlis-verif@jadlis
 claude plugin list
 ```
 
 Reinstall, if something ended up crooked:
 
 ```
-claude plugin uninstall verif@jadlis --keep-data && claude plugin install verif@jadlis
+claude plugin uninstall jadlis-verif@jadlis --keep-data && claude plugin install jadlis-verif@jadlis
 ```

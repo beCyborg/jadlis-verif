@@ -229,7 +229,7 @@ claude -p "$(cat "{PROMPT_FILE}")" \
   --output-format json \
   --json-schema "$(cat "{CLAUDE_SCHEMA_FILE}")" \
   --append-system-prompt "$(cat "{FABLE_SYSTEM_PROMPT}")" \
-  --allowedTools "Read,Grep,Glob,mcp__plugin_search_brave-search__brave_web_search,mcp__plugin_search_firecrawl__firecrawl_scrape" \
+  --allowedTools "Read,Grep,Glob,mcp__plugin_jadlis-search_brave-search__brave_web_search,mcp__plugin_jadlis-search_firecrawl__firecrawl_scrape" \
   < /dev/null > "{FABLE_OUT}" 2>&1
 ```
 
