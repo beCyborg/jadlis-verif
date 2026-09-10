@@ -24,19 +24,11 @@ Five steps of the mechanism:
 
 One run, end to end (tag `jadlis-verif--v2.0.0`):
 
-```mermaid
-flowchart TD
-    P["Your file<br/>plan · research · doc"]
-    P --> C["Codex<br/>gpt-6-astra"]
-    P --> F["Claude<br/>Fable 5"]
-    P --> G["Grok<br/>grok-4.6"]
-    C --> M["Merge on the worst verdict"]
-    F --> M
-    G --> M
-    M --> A["Arbiter Fable 5<br/>sources hidden: A / B / C"]
-    A --> Q["A batch of questions for you"]
-    Q --> D["You decide"]
-```
+1. **Your file** — plan, research or document.
+2. **Three branches, separately** — Codex (`gpt-6-astra`), Claude (Fable 5), Grok (`grok-4.6`); without Grok — two branches.
+3. **Merge on the worst** verdict.
+4. **Arbiter Fable 5** — sources hidden: A / B / C.
+5. **A batch of questions for you** → you decide.
 
 <details>
 <summary>Synthetic verdict sample (invented data)</summary>
@@ -98,7 +90,7 @@ Steps: 1) buy the domain, 2) migrate the list, 3) shut the old service down the 
 
 Optional, but it changes the result noticeably:
 
-- **Codex CLI** (ChatGPT subscription) — the first branch. Without it two remain: Claude and Grok.
+- **Codex CLI** (ChatGPT subscription) — the mandatory branch: without it the plugin is not installed.
 - **Grok CLI** (Grok subscription) — the third branch, $0 on top of the subscription. Without it the run goes dual; in tier 3 you also lose the `grokweb` and `twitter` channels.
 
 Missing both CLIs does not break the run: one Claude branch is left, but the whole point — independence of the readings — is gone. Read a single-branch verdict as an opinion, not as a check.
@@ -135,7 +127,7 @@ What costs money:
 |---|---|---|
 | Brave Search API, Search plan | ≈$0.005 per request | yes |
 | Firecrawl | per plan credits | yes |
-| ChatGPT subscription (Codex CLI) | per subscription tier | no — the Codex branch |
+| ChatGPT subscription (Codex CLI) | per subscription tier | yes — the Codex branch is mandatory |
 | Grok subscription (Grok CLI) | $0 on top of the subscription | no — the Grok branch |
 
 No branch may run longer than 600,000 ms — after that the timeout cuts it off and the verdict is assembled from the survivors. A silent branch is marked as a failure, never as agreement.
