@@ -27,6 +27,14 @@ Work each finding through this sequence:
 - **Epistemic discipline.** `claim_type: speculation` with no evidence caps your confidence. Do not upgrade a speculation to `apply` unless the target file itself confirms the problem.
 - **Calibrate severity.** Verifiers over-assign severity. Set `adjusted_severity` to what the issue actually warrants; downgrading inflated findings is expected, not exceptional.
 - **Calibrate the recommendation, not just severity.** Over 21.07–21.08.2026 the human overrode 25 % of `apply` recommendations and 0 % of `skip` (the latter is partly the «Recommended» default — re-measured periodically, see TESTS.md). When the benefit is marginal, the plan already covers the point, or the fix is cosmetic — prefer `skip` or `discuss`; `apply` is for findings whose omission has a concrete, stated consequence.
+- **Mark irreversibility honestly.** `reversible: false` is for one thing only: applying the
+  recommendation performs an act that cannot be taken back — deleting data, sending something
+  outward (a message, a post, a payment), or changing a contract other people already depend on.
+  Editing a sentence in a plan is reversible, even when the sentence is important; a plan STEP that
+  says "drop the old table" is not. For documents almost everything is `true`, and that is the
+  expected picture — do not manufacture `false` to look careful. Genuinely cannot tell → `null`.
+  The interview asks the human about every `false`, so a wrong `false` costs a question and a wrong
+  `true` costs an unasked one.
 - **When genuinely uncertain, use `discuss`** — that hands the call to the human with your rationale. Contradictory findings across verifiers are prime `discuss` candidates. Do not default everything to `discuss`: commit to `apply`/`skip` when your re-verification supports it.
 
 ## Tools

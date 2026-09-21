@@ -28,6 +28,7 @@ This is my workbench published as it is, not a product: whatever I stopped using
 | **Whose frame the reviewer uses.** One head, one angle. | Your own frame, retold back to you: whatever you did not ask about is not there. | The two frames differ — so you also see what you never asked about. |
 | **What to do with a heap of findings.** The list sits in your notes and goes stale. | You get one more long list, and half of the edits you roll back later. | The arbiter merges the findings into one list: what several found weighs more than what one wrote beautifully. |
 | **How a finding becomes an edit.** By hand, if you ever get round to it. | Discussed and forgotten. | A batch interview over every finding: accept, reject or rewrite — and only then the edits. |
+| **Who checks the edits themselves.** Nobody: made and forgotten. | The same model that made them — and it agrees with itself. | A different model re-reads the edits: is the finding closed, did anything next to it break. |
 | **When the hole opens up.** During execution, when the money and the month are already in. | Same place. | Before. |
 
 ## How it works
@@ -40,9 +41,14 @@ arbiter merges the findings into one list and raises whatever the readings agree
 Coming out — a walk through the findings: accept, reject or rewrite, and only what you accepted goes
 into the edits. You pick how it goes: **auto** — the plugin applies the arbiter's calls itself and
 asks only about the strong forks, at most four questions; **manual** — one question per finding.
+The edits themselves are then re-read by a different model than the one that made them: is the
+finding closed, did anything next to it break, was more rewritten than asked; if something turns
+up, one round of corrections, and if it still does not settle, it tells you what is left.
+If one of the two readings never happened, the plugin retries it once and then writes "coverage
+partial" in the header and withholds "go ahead" — an incomplete check is never final.
 
 In words: the plan → two readings separately → the arbiter merges them into one list → you choose
-"auto" or "manual" → edits in the plan.
+"auto" or "manual" → edits in the plan → a re-check of the edits.
 
 <details>
 <summary>If people did this · How it differs from Perplexity and ChatGPT Deep Research · An example</summary>

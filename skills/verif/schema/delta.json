@@ -1,0 +1,129 @@
+{
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "status",
+    "summary",
+    "closed",
+    "regressions",
+    "scope_creep"
+  ],
+  "properties": {
+    "status": {
+      "type": "string",
+      "enum": [
+        "clean",
+        "issues"
+      ],
+      "description": "clean = every accepted finding is closed, nothing nearby broke, no work beyond the findings. issues = at least one entry in closed(no|partial), regressions or scope_creep. 'clean' is a legitimate answer — do not manufacture problems to look useful."
+    },
+    "summary": {
+      "type": "string",
+      "description": "2-3 sentences in Russian: what the edits did and what, if anything, is wrong with them. Plain language, no jargon without a gloss."
+    },
+    "closed": {
+      "type": "array",
+      "description": "Exactly one entry per accepted finding id given in the input. Do not invent ids.",
+      "items": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": [
+          "id",
+          "closed",
+          "why"
+        ],
+        "properties": {
+          "id": {
+            "type": "string",
+            "description": "Finding id exactly as given in the frozen list (e.g. F1)"
+          },
+          "closed": {
+            "type": "string",
+            "enum": [
+              "yes",
+              "partial",
+              "no"
+            ],
+            "description": "yes = the diff does what the recommendation asked; partial = addressed but incomplete; no = not addressed or addressed wrongly"
+          },
+          "why": {
+            "type": "string",
+            "description": "One sentence in Russian grounded in the diff: which added or removed line closes it (or what is still missing)"
+          }
+        }
+      }
+    },
+    "regressions": {
+      "type": "array",
+      "description": "Places the edits broke or contradicted, outside the finding they were meant to fix. Empty array when there are none.",
+      "items": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": [
+          "file",
+          "line",
+          "quote",
+          "what_broke",
+          "severity"
+        ],
+        "properties": {
+          "file": {
+            "type": "string",
+            "description": "Absolute path of the edited file"
+          },
+          "line": {
+            "type": [
+              "integer",
+              "null"
+            ],
+            "description": "Line number in the file AFTER the edits; null when the diff gives no usable number"
+          },
+          "quote": {
+            "type": "string",
+            "description": "Verbatim quote of the offending line from the diff or the file — no paraphrase"
+          },
+          "what_broke": {
+            "type": "string",
+            "description": "One sentence in Russian: what stopped working or now contradicts a neighbouring step"
+          },
+          "severity": {
+            "type": "string",
+            "enum": [
+              "critical",
+              "high",
+              "medium",
+              "low"
+            ]
+          }
+        }
+      }
+    },
+    "scope_creep": {
+      "type": "array",
+      "description": "Changes that go beyond what the accepted findings asked for (rewrites, refactors, 'improvements' nobody requested). Empty array when there are none.",
+      "items": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": [
+          "file",
+          "quote",
+          "why_beyond_finding"
+        ],
+        "properties": {
+          "file": {
+            "type": "string",
+            "description": "Absolute path of the edited file"
+          },
+          "quote": {
+            "type": "string",
+            "description": "Verbatim quote of the added line from the diff"
+          },
+          "why_beyond_finding": {
+            "type": "string",
+            "description": "One sentence in Russian: which accepted finding this was supposed to serve and why it exceeds it"
+          }
+        }
+      }
+    }
+  }
+}

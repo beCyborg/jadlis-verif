@@ -1,7 +1,7 @@
 {
   "$schema": "https://json.schemastore.org/claude-code-plugin-manifest.json",
   "name": "jadlis-verif",
-  "version": "3.0.0",
+  "version": "3.1.0",
   "displayName": "Jadlis — проверка плана двумя моделями",
   "description": "Codex и Fable порознь рвут план или документ, арбитр сводит находки, батч-интервью, правки. Автономен: нужен Codex CLI (подписка ChatGPT); веб-проверка первоисточников — через плагин jadlis-search, если он установлен.",
   "author": {

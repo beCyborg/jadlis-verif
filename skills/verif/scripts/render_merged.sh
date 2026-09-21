@@ -5,9 +5,13 @@
 # Usage:
 #   render_merged.sh <merged.json>
 #
-# Reads JSON shaped as { consensus: {verdict, rule, disagreement, providers[]},
-# <label>: {...}, ... } and prints a compact summary with per-verifier findings
-# and a union of next_steps across all providers.
+# Reads JSON shaped as { consensus: {verdict, rule, disagreement, providers[],
+# coverage, dropped[]}, <label>: {...}, ... } and prints a compact summary with
+# per-verifier findings and a union of next_steps across all providers.
+#
+# Строка «ПОКРЫТИЕ» (3.1.0) идёт сразу за PROVIDERS: неполная проверка должна быть
+# видна в шапке, а не выводиться читателем из пометок ⚠ ниже. Merged без полей
+# coverage/dropped (прогоны до 3.1.0) читается как полное покрытие.
 set -euo pipefail
 
 if [[ $# -ne 1 ]]; then
@@ -42,9 +46,16 @@ jq -r '
   # Явные пометки деградации: выбывшая ветка не должна исчезать из verdict.md без следа (прогон 21.08)
   | ((["codex","fable"] - $labels) | map("⚠ НЕ УЧАСТВОВАЛ: \(.)")) as $absent
   | ($labels | map(select(is_stub($m[.])) | "⚠ СБОЙ: \(.) (ответ не JSON)")) as $stubs
-  | "VERDICT: \(.consensus.verdict | ascii_upcase)\n" +
+  | (.consensus.coverage // "full") as $coverage
+  | (.consensus.dropped // []) as $dropped
+  | "VERDICT: \(.consensus.verdict | ascii_upcase)"
+    # Частичное покрытие запрещает финальный approve: вердикт остаётся сырым, но читается с оговоркой
+    + (if $coverage == "partial" and .consensus.verdict == "approve"
+       then " (покрытие частичное — не финально)" else "" end) + "\n" +
     "RULE: \(.consensus.rule)\n" +
     "PROVIDERS: \($labels | join(", "))\n" +
+    "ПОКРЫТИЕ: " + (if $coverage == "full" then "полное"
+                    else "частичное (выпал: \($dropped | join(", ")))" end) + "\n" +
     (($absent + $stubs) | map(. + "\n") | join("")) +
     "DISAGREEMENT: \(.consensus.disagreement)\n\n" +
     ($labels | map(block(.; $m[.])) | join("\n\n")) + "\n\n" +

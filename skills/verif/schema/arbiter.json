@@ -24,7 +24,8 @@
           "refuted",
           "refuted_reason",
           "cross_check",
-          "adjusted_severity"
+          "adjusted_severity",
+          "reversible"
         ],
         "properties": {
           "id": {
@@ -75,6 +76,13 @@
               "low"
             ],
             "description": "Arbiter's calibrated severity; may differ from the providers' severity"
+          },
+          "reversible": {
+            "type": [
+              "boolean",
+              "null"
+            ],
+            "description": "Is APPLYING this finding's recommendation undoable? false only for an irreversible act: deleting data, sending something outward (message, post, payment), or changing a contract others already rely on. Ordinary text edits are reversible (true). null when you genuinely cannot tell — the interview treats null as reversible."
           },
           "plain": {
             "type": "object",
