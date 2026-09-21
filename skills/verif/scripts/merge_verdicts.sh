@@ -3,7 +3,7 @@
 #
 # Usage:
 #   merge_verdicts.sh <label>:<path> [<label>:<path> ...]
-#   e.g. merge_verdicts.sh codex:/p/c.json fable:/p/f.json grok:/p/g.json
+#   e.g. merge_verdicts.sh codex:/p/c.json fable:/p/f.json
 #
 # Output (to stdout):
 #   { "consensus": { verdict, rule, disagreement, providers: [...] },

@@ -1,5 +1,6 @@
 #!/usr/bin/env bash
-# render_merged.sh — Human-readable rendering of a merged N-provider verdict.
+# render_merged.sh — Human-readable rendering of a merged N-provider verdict
+# (two providers in the current pipeline: codex + fable).
 #
 # Usage:
 #   render_merged.sh <merged.json>
@@ -38,8 +39,8 @@ jq -r '
 
   . as $m
   | (.consensus.providers // (keys - ["consensus"])) as $labels
-  # Явные пометки деградации: раньше выбывший Grok исчезал из verdict.md без следа (прогон 21.08)
-  | ((["codex","fable","grok"] - $labels) | map("⚠ НЕ УЧАСТВОВАЛ: \(.)")) as $absent
+  # Явные пометки деградации: выбывшая ветка не должна исчезать из verdict.md без следа (прогон 21.08)
+  | ((["codex","fable"] - $labels) | map("⚠ НЕ УЧАСТВОВАЛ: \(.)")) as $absent
   | ($labels | map(select(is_stub($m[.])) | "⚠ СБОЙ: \(.) (ответ не JSON)")) as $stubs
   | "VERDICT: \(.consensus.verdict | ascii_upcase)\n" +
     "RULE: \(.consensus.rule)\n" +
