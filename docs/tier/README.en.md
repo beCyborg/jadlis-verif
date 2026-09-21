@@ -10,25 +10,27 @@ The costly mistake is not the one you missed. It is the one you argued yourself 
 
 Ask a single chat to "critique my plan" and it sees both the plan and your reasoning — so it completes your logic instead of breaking it: it agrees and reinforces. `verif` works the other way round: the same file is read by two AIs from two different vendors, separately, knowing neither the author nor the author's explanations.
 
-Five steps of the mechanism:
+Six steps of the mechanism:
 
 1. Two readings in isolation — each has its own search, neither sees the other's conclusions.
 2. One answer format — the verdicts are comparable.
-3. The worst branch wins, not the average: one "unreliable" makes the whole verdict unreliable.
+3. The worst of the branches that answered wins, not the average: one "unreliable" makes the whole verdict unreliable. A branch that never answered is retried once, and after that the header says "coverage partial" — and "go ahead" is withheld.
 4. A blind judge: the arbiter rules on findings without knowing whose each one is (labels A / B).
-5. A walk through the findings with you — a human decides, not the pipeline: "auto" (the plugin follows the arbiter's calls and asks only about the strong forks) or "manual" (one question per finding).
+5. A walk through the findings with you — a human decides, not the pipeline: "auto" (the plugin follows the arbiter's calls and asks about the critical, the irreversible and the disputed, plus one random spot-check) or "manual" (one question per finding).
+6. A re-check of the edits: what was applied is re-read by a different model — is the finding closed, did anything next to it break, was more rewritten than asked. Something turns up: one round of corrections, and that is the ceiling.
 
 ## What it looks like
 
 ![A business-plan canvas on three legs, robotic arms pulling the legs out](https://github.com/beCyborg/jadlis-hub/blob/main/docs/img/01-verif-01.webp?raw=1)
 
-One run, end to end (tag `jadlis-verif--v3.0.0`):
+One run, end to end (tag `jadlis-verif--v3.1.0`):
 
 1. **Your file** — plan, research or document.
 2. **Two branches, separately** — Codex (`gpt-6-astra`) and Claude (Fable 5.1).
-3. **Merge on the worst** verdict.
+3. **Merge on the worst** verdict among the branches that answered, with a coverage line.
 4. **Arbiter Fable 5** — sources hidden: A / B.
 5. **The findings walk-through** — "auto" or "manual" → you decide.
+6. **A re-check of the edits** — Codex reads the diff; not wanted, use `--no-recheck`.
 
 <details>
 <summary>Synthetic verdict sample (invented data)</summary>
@@ -40,6 +42,7 @@ Short version: needs revision — 9 raw findings from 2 checkers, 3 of them seri
 3. There is no "what if the key is missing" branch — step 6 dies with a cryptic error instead of skipping.
 
 VERDICT: NEEDS-REVISION  (Codex: needs-revision · Fable: needs-revision)
+COVERAGE: full
 
 FINDINGS (9):
   [HIGH]   Service has no free tier            (factual, verifiable)  — plan.md:41
@@ -48,7 +51,8 @@ FINDINGS (9):
   [LOW]    Docs link returns 404               (factual, verifiable)  — plan.md:12
 
 Arbiter: 6 apply · 2 skip (1 refuted by counter-evidence) · 1 discuss
-Artifacts: AI/verif/2026-09-06--plan--{codex,fable,merged,arbiter}.json
+Re-check of the edits: clean
+Artifacts: AI/verif/2026-09-06--plan--{codex,fable,merged,arbiter,delta}.json
 ```
 
 </details>
@@ -99,9 +103,10 @@ A missing Codex CLI does not break the run: one Claude branch is left, but the w
 Three scenarios, three commands:
 
 ```text
-/verif --file Plan.md                    # full run: two branches → arbiter → questions
+/verif --file Plan.md                    # full run: two branches → arbiter → questions → edits → re-check
 /verif --file Research.md --report-only  # report only, no questions, no edits
 /verif --file Doc.md --only fable        # a single branch: a quick rough pass
+/verif --file Plan.md --no-recheck       # apply the edits, do not re-check them
 ```
 
 Worth knowing as it runs:
@@ -109,7 +114,7 @@ Worth knowing as it runs:
 - Branches run in parallel and report as they finish — the first verdict lands before the others.
 - The file type (`plan` / `research` / `doc`) is detected automatically; `--type` sets it explicitly.
 - Before the findings walk-through the plugin asks for a mode: "auto" — it applies the arbiter's calls itself, asks at most four questions about the strong forks and prints what it decided before applying; "manual" — one question per finding. If the arbiter did not answer, it goes manual straight away.
-- Every artifact lands in the vault under `AI/verif/` — one json per branch, the merged verdict, the decisions file (which records what you decided and what auto mode did).
+- Every artifact lands in the vault under `AI/verif/` — one json per branch, the merged verdict, the decisions file (which records what you decided and what auto mode did) and the result of the re-check. A run-log line is appended to `_runs.jsonl` in the same folder: it shows how the share of accepted findings moves from run to run.
 - Quality depends on what you hand over: an assumption written out is a target; an assumption dissolved into prose is a mine nobody finds.
 
 ## Limits and cost
@@ -129,7 +134,9 @@ What costs money:
 | Firecrawl | per plan credits | yes |
 | ChatGPT subscription (Codex CLI) | per subscription tier | yes — the Codex branch is mandatory |
 
-No branch may run longer than 600,000 ms — after that the timeout cuts it off and the verdict is assembled from the survivors. A silent branch is marked as a failure, never as agreement.
+No branch may run longer than 600,000 ms — after that the timeout cuts it off and the verdict is assembled from the survivors. A silent branch is retried once and then marked as a failure, never as agreement; coverage becomes partial.
+
+The re-check of the edits is one more Codex call per run, over a single diff. On a large set of edits that is a visible share of the subscription; not wanted — `--no-recheck`.
 
 ## Where the keys live
 

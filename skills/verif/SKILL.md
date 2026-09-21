@@ -1,8 +1,8 @@
 ---
 name: verif
-description: "Dual adversarial verification of a plan/research/doc: Codex + Fable in parallel, arbiter merge, batch interview, fixes. Flags: --only codex|fable, --report-only, --json. Triggers: /verif, verify plan, adversarial review, fact-check. RU triggers: верифицируй план, проверь план, проверь ресерч на факты, фактчек документа. Do NOT use for: code → /code-review; research → /full-research."
-argument-hint: "[focus] [--file <path>] [--type plan|research|doc] [--only codex|fable] [--report-only] [--json]"
-allowed-tools: Read, Glob, Write, Edit, MultiEdit, AskUserQuestion, Task, Agent, Bash(codex:*), Bash(claude:*), Bash(mktemp:*), Bash(cat:*), Bash(ls:*), Bash(jq:*), Bash(rm:*), Bash(trap:*), Bash(grep:*), Bash(echo:*), Bash(ln:*), Bash(bash:*), Bash(test:*), Bash(chmod:*), Bash(mkdir:*), Bash(date:*), Bash(sed:*), Bash(wc:*), Bash(stat:*)
+description: "Dual adversarial verification of a plan/research/doc: Codex + Fable in parallel, arbiter merge, batch interview, fixes, re-check of the fixes. Flags: --only codex|fable, --report-only, --no-recheck, --json. Triggers: /verif, verify plan, adversarial review, fact-check. RU triggers: верифицируй план, проверь план, проверь ресерч на факты, фактчек документа. Do NOT use for: code → /code-review; research → /full-research."
+argument-hint: "[focus] [--file <path>] [--type plan|research|doc] [--only codex|fable] [--report-only] [--no-recheck] [--json]"
+allowed-tools: Read, Glob, Write, Edit, MultiEdit, AskUserQuestion, Task, Agent, Bash(codex:*), Bash(claude:*), Bash(mktemp:*), Bash(cat:*), Bash(ls:*), Bash(jq:*), Bash(rm:*), Bash(trap:*), Bash(grep:*), Bash(echo:*), Bash(ln:*), Bash(bash:*), Bash(test:*), Bash(chmod:*), Bash(mkdir:*), Bash(date:*), Bash(sed:*), Bash(wc:*), Bash(stat:*), Bash(cp:*), Bash(diff:*), Bash(shasum:*), Bash(awk:*), Bash(tr:*), Bash(printf:*), Bash(python3:*)
 ---
 
 # /verif — Dual adversarial верификация (Codex + Fable 5) с арбитром
@@ -11,7 +11,7 @@ allowed-tools: Read, Glob, Write, Edit, MultiEdit, AskUserQuestion, Task, Agent,
 
 Provider-agnostic policy — `${CLAUDE_PLUGIN_DATA}/verif-homes/codex-home/AGENTS.md` для Codex, `system-prompts/fable-verifier.md` для Fable (codex-home разворачивается из `${CLAUDE_PLUGIN_ROOT}/assets/verif-homes/` при первом запуске). Templates — `prompts/{plan,research,doc}.md`.
 
-**Архитектура v6 (v6.1 — интервью простым языком: арбитр отдаёт `plain.*`, вопросы строятся по `references/plain-language.md`; v7 — развилка режима интервью «авто / вручную» перед первым батчем):** single-turn запуск, два параллельных `Bash(run_in_background: true)`. Completion notification приходит независимо для каждого — скилл показывает результат каждого завершившегося верификатора сразу (стриминг). После merge — **этап Арбитра**: headless Fable 5 (high) судит дедуплицированные находки в контексте целевого файла, кросс-чекает провайдеров и помечает опровергнутые. Затем Фаза A: батч-интервью по находкам с рекомендациями арбитра (сначала развилка «авто / вручную»), и Фаза B: параллельное применение одобренных правок субагентами (один файл = один субагент).
+**Архитектура v6 (v6.1 — интервью простым языком: арбитр отдаёт `plain.*`, вопросы строятся по `references/plain-language.md`; v7 — развилка режима интервью «авто / вручную» перед первым батчем; v8 — статус покрытия вместо заглушки, Фаза C и журнал запусков):** single-turn запуск, два параллельных `Bash(run_in_background: true)`. Completion notification приходит независимо для каждого — скилл показывает результат каждого завершившегося верификатора сразу (стриминг). После merge — **этап Арбитра**: headless Fable 5 (high) судит дедуплицированные находки в контексте целевого файла, кросс-чекает провайдеров и помечает опровергнутые. Затем Фаза A: батч-интервью по находкам с рекомендациями арбитра (сначала развилка «авто / вручную»), Фаза B: параллельное применение одобренных правок субагентами (один файл = один субагент), Фаза C: один ограниченный проход Codex по диффу правок. Каждый прогон дописывает строку в журнал `AI/verif/_runs.jsonl`.
 
 > **Оговорка о направлении ревью (KDD'26, arXiv 2607.21656, 116 задач):** в чистой паре «писатель→ревьюер» ревью Codex работ Claude РОНЯЛО pass rate 91,4%→82,8% (обратное направление поднимало 71,6%→89,7%; модели прошлого поколения, ревьюер не запускал тесты). Наш пайплайн от этого защищён арбитром-Fable — поэтому вердиктам одного Codex (`--only codex`) по Claude-артефактам без арбитра не доверять слепо; при расхождении провайдеров вес у арбитра. Перенос выводов на Opus 5/Fable 5 не проверен — свой A/B при случае.
 
@@ -23,6 +23,7 @@ Provider-agnostic policy — `${CLAUDE_PLUGIN_DATA}/verif-homes/codex-home/AGENT
 - `--type plan|research|doc` — тип файла (если не указан — определи автоматически).
 - `--only codex|fable` — запустить только один верификатор. По умолчанию — оба параллельно. Арбитр, интервью и применение не запускаются.
 - `--report-only` — вывести merged-отчёт и остановиться (без арбитра, интервью и применения).
+- `--no-recheck` — не запускать Фазу C: правки применяются и не перепроверяются. Снимки файлов тоже не делаются.
 - `--json` — вернуть полный merged JSON (без арбитра, интервью и применения).
 - Остальной текст — фокус верификации.
 
@@ -46,11 +47,13 @@ Read target. Если `--type` не указан:
 ## Шаг 3: Режим выполнения
 
 - **Default (dual):** Codex + Fable параллельно (два `Bash(run_in_background: true)`
-  в одном сообщении) → notifications → merge + render → Арбитр → Фаза A → Фаза B.
+  в одном сообщении) → notifications → merge + render → Арбитр → Фаза A → Фаза B → Фаза C → журнал.
 - **`--only codex|fable`:** соответствующий Bash в одиночку, рендер single-verifier
-  (Шаг 7), без арбитра и интервью.
-- **Сбой одной ветки** merge поддерживает штатно: упавший провайдер становится stub
-  `unreliable`, вердикт собирается из выжившей ветки (см. «Ошибки и fallbacks»).
+  (Шаг 7), без арбитра, интервью и Фазы C.
+- **Сбой одной ветки** merge поддерживает штатно: сначала **один перезапуск той же ветки**
+  (см. «Обработка notifications»), и только если и он пуст — ветка уходит в `dropped`,
+  консенсус считается по выжившей, покрытие становится `partial`, а approve запрещён
+  (см. «Ошибки и fallbacks»).
 
 ## Шаг 4: Synchronous prelude — подготовка
 
@@ -78,9 +81,12 @@ for f in AGENTS.md config.toml; do
 done
 SCHEMA_PATH="$VERIFIER_ROOT/schema/verdict.json"
 ARBITER_SCHEMA_PATH="$VERIFIER_ROOT/schema/arbiter.json"
+DELTA_SCHEMA_PATH="$VERIFIER_ROOT/schema/delta.json"      # Фаза C; запрещённых для claude ключей не содержит — производную делать не нужно
 BUILD_PROMPT="$VERIFIER_ROOT/scripts/build_prompt.sh"
+LOG_RUN="$VERIFIER_ROOT/scripts/log_run.sh"
 FABLE_SYSTEM_PROMPT="$VERIFIER_ROOT/system-prompts/fable-verifier.md"
 ARBITER_SYSTEM_PROMPT="$VERIFIER_ROOT/system-prompts/arbiter.md"
+DELTA_SYSTEM_PROMPT="$VERIFIER_ROOT/system-prompts/delta-check.md"
 PLAIN_RULES="$VERIFIER_ROOT/references/plain-language.md"   # правила простого языка: дописываются в system prompt арбитра, читаются главным тредом для интервью/«Коротко»
 
 # First-run symlinks (safe no-op если существуют)
@@ -137,6 +143,12 @@ VERDICT_MD="$PERSIST_DIR/${BASE}--verdict.md"
 FINDINGS_OUT="$PERSIST_DIR/${BASE}--findings.json"
 ARBITER_OUT="$PERSIST_DIR/${BASE}--arbiter.json"
 DECISIONS_OUT="$PERSIST_DIR/${BASE}--decisions.json"
+DELTA_OUT="$PERSIST_DIR/${BASE}--delta.json"
+
+# Метки времени для журнала. Рабочий файл, а не переменная: границы интервью ставятся
+# в других Bash-вызовах, а состояние между ними не переживает. log_run.sh удаляет его сам.
+RUN_TIMES="$PERSIST_DIR/${BASE}--run.times"
+echo "prelude=$(date +%s)" > "$RUN_TIMES"
 
 echo "VERIF_PATHS:"
 echo "  PROMPT_FILE=$PROMPT_FILE"
@@ -150,6 +162,8 @@ echo "  VERDICT_MD=$VERDICT_MD"
 echo "  FINDINGS_OUT=$FINDINGS_OUT"
 echo "  ARBITER_OUT=$ARBITER_OUT"
 echo "  DECISIONS_OUT=$DECISIONS_OUT"
+echo "  DELTA_OUT=$DELTA_OUT"
+echo "  RUN_TIMES=$RUN_TIMES"
 echo "  EFFORT_CODEX=$EFFORT_CODEX"
 echo "  EFFORT_FABLE=$EFFORT_FABLE"
 echo "  FABLE_MODEL=$FABLE_MODEL"
@@ -158,9 +172,12 @@ echo "  CODEX_MODEL=$CODEX_MODEL"
 echo "  MODELS=$FABLE_MODEL / $CODEX_MODEL / $EFFORT_FABLE / $EFFORT_CODEX"
 echo "  SCHEMA_PATH=$SCHEMA_PATH"
 echo "  ARBITER_SCHEMA_PATH=$ARBITER_SCHEMA_PATH"
+echo "  DELTA_SCHEMA_PATH=$DELTA_SCHEMA_PATH"
 echo "  CODEX_HOME_DIR=$CODEX_HOME_DIR"
 echo "  FABLE_SYSTEM_PROMPT=$FABLE_SYSTEM_PROMPT"
 echo "  ARBITER_SYSTEM_PROMPT=$ARBITER_SYSTEM_PROMPT"
+echo "  DELTA_SYSTEM_PROMPT=$DELTA_SYSTEM_PROMPT"
+echo "  LOG_RUN=$LOG_RUN"
 echo "  PLAIN_RULES=$PLAIN_RULES"
 ```
 
@@ -208,8 +225,14 @@ claude -p "$(cat "{PROMPT_FILE}")" \
 1. Определить какой верификатор завершился (по тексту notification — он содержит команду и путь output файла).
 2. Прочитать output файл, нормализовать (см. Шаг 6), отрендерить single verdict через jq.
 3. Показать: `"✓ {Codex|Fable} завершён. Ожидание остальных..."`
+4. **Ветка не дала вердикта** (exit != 0, пустой файл, каскад Шага 6 ничего не извлёк) —
+   **один перезапуск той же ветки тем же вызовом** (тот же Bash A/B, тот же промпт, вывод в тот
+   же файл), с сообщением «{Codex|Fable} не ответил — перезапускаю один раз». Второй раз пусто —
+   перезапусков больше нет, ветка уходит в `dropped` на Шаге 6. Перезапускаем **то же место, а
+   не другое семейство**: по ресёрчу («Состязательная верификация», раздел «Покрытие и повторные
+   прогоны») повторный прогон того же проверяющего добавляет покрытия, а подмена семейства — нет.
 
-Когда оба верификатора завершились → Шаг 6.
+Когда обе ветки закончили (с учётом перезапуска) → Шаг 6.
 
 ## Шаг 6: Нормализация + Merge + Render + Save
 
@@ -224,7 +247,9 @@ bash "${CLAUDE_PLUGIN_ROOT}/skills/verif/scripts/normalize_and_merge.sh"
 ```
 
 Нераспознанный ответ провайдера становится `{}` → merge помечает его stub unreliable
-(провайдер молчит, а не «согласен»).
+(провайдер молчит, а не «согласен») И заносит метку в `consensus.dropped`: такая ветка не
+голосует, консенсус считается по ответившим, `consensus.coverage` становится `partial`, а
+`consensus.status` поднимает approve до needs-revision. Рендер печатает строку «ПОКРЫТИЕ».
 
 ## Шаг 7: Отчёт и развилка
 
@@ -239,7 +264,7 @@ bash "${CLAUDE_PLUGIN_ROOT}/skills/verif/scripts/normalize_and_merge.sh"
 3. {третья}
 ```
 
-`consensus.verdict` → «нужны правки» (needs-revision) / «можно делать» (approve) / «план ненадёжен» (unreliable). `N` — сумма `findings` всех веток merged; это число честно названо «сырым»: дедуп делается позже в Arb-1, и точное число проблем = число вопросов интервью. Три строки — по убыванию severity из объединённых findings; если две ветки явно описывают одну и ту же проблему — показать её один раз; при < 3 находок — сколько есть; при 0 — «Проблем не нашли». Только пересказ `title`/`body` находок, без новых фактов. Строка деградации — из состояния пайплайна, не из merged: stub-провайдер в merged (`⚠ СБОЙ` в рендере) → «Не участвовал: {провайдер} (сбой — ответ не JSON)»; ветка не запускалась (`⚠ НЕ УЧАСТВОВАЛ` в рендере) → «Не участвовал: {провайдер} (обрыв — {что видел: пустой ответ / exit≠0 / таймаут})».
+`consensus.verdict` → «нужны правки» (needs-revision) / «можно делать» (approve) / «план ненадёжен» (unreliable). `N` — сумма `findings` всех веток merged; это число честно названо «сырым»: дедуп делается позже в Arb-1, и точное число проблем = число вопросов интервью. Три строки — по убыванию severity из объединённых findings; если две ветки явно описывают одну и ту же проблему — показать её один раз; при < 3 находок — сколько есть; при 0 — «Проблем не нашли». Только пересказ `title`/`body` находок, без новых фактов. Строка деградации — из состояния пайплайна, не из merged: stub-провайдер в merged (`⚠ СБОЙ` в рендере) → «Не участвовал: {провайдер} (сбой — ответ не JSON, перезапуск не помог)»; ветка не запускалась (`⚠ НЕ УЧАСТВОВАЛ` в рендере) → «Не участвовал: {провайдер} (обрыв — {что видел: пустой ответ / exit≠0 / таймаут})». При `consensus.coverage = "partial"` первой строкой «Коротко» идёт «Покрытие частичное: проверял только {выжившая ветка} — вердикт не финальный».
 
 Rendered verdict и пути:
 
@@ -360,9 +385,48 @@ header «Режим»): **авто** — решения арбитра прим�
 молча идём вручную и говорим об этом одной строкой. Вся фактура находки живёт ВНУТРИ
 `question` (5 строк обычного текста, без разметки; сегменты «Цена» и «Риск» выбрасываются,
 если в материале их нет) — отдельных сообщений перед вопросами не печатать.
-Спека режимов, шаблон вопроса, guard против галлюцинаций, фиксация решений
-(`decided_by`, `auto_low_confidence`) и параллельное применение субагентами —
+Спека режимов, шаблон вопроса, guard против галлюцинаций, процедурное правило развилок
+авто-режима и выборочная проверка, фиксация решений (`decided_by`, `auto_low_confidence`,
+`why_asked`) и параллельное применение субагентами —
 `@${CLAUDE_PLUGIN_ROOT}/skills/verif/references/interview-apply.md`.
+
+Перед интервью и после него поставить метки времени для журнала:
+
+```bash
+echo "machine_done=$(date +%s)" >> "$RUN_TIMES"    # сразу после этапа Арбитра
+echo "interview_start=$(date +%s)" >> "$RUN_TIMES" # перед первым AskUserQuestion
+echo "interview_done=$(date +%s)" >> "$RUN_TIMES"  # после A4, до Фазы B
+```
+
+## Фаза C: перепроверка правок
+
+Только после Фазы B и только если в ней что-то применено. Один ограниченный проход **Codex** по
+диффу правок (другое семейство, чем у субагентов-исправителей), три вопроса — закрыта ли каждая
+находка, не сломано ли соседнее, не вырос ли объём; `MAX_FIX_ROUNDS = 2`. Codex недоступен —
+откат на Fable headless (`delta_by: fable`). Пропуск: нет принятых находок, `--report-only`,
+`--json`, `--only`, `--no-recheck`.
+
+Снимки файлов (C0), сборка диффа и замороженного списка, промпт, вызовы, круг доправок,
+артефакт `$DELTA_OUT` и строка сводки —
+`@${CLAUDE_PLUGIN_ROOT}/skills/verif/references/delta-recheck.md`.
+
+## Журнал запуска
+
+Последним шагом любого default-прогона — один foreground вызов. Строку собирает скрипт из
+артефактов; числа из сводки в него не переписывать и журнал руками не редактировать.
+
+```bash
+bash "$LOG_RUN" \
+  --persist-dir "$PERSIST_DIR" --base "$BASE" \
+  --target "$ABSOLUTE_PATH" --type "$TYPE" \
+  --models "$(jq -nc --arg c "$CODEX_MODEL" --arg f "$FABLE_MODEL" \
+                     --arg ec "$EFFORT_CODEX" --arg ef "$EFFORT_FABLE" \
+                     '{codex:$c, fable:$f, effort_codex:$ec, effort_fable:$ef}')" \
+  --mode "{auto|manual}" --delta-by "{codex|fable|none|skipped}" --fix-rounds "{0|1|2}"
+```
+
+Дозапись в `AI/verif/_runs.jsonl`, одна строка на прогон. Сводка по журналу —
+`bash "$VERIFIER_ROOT/scripts/verif_stats.sh"` (путь берётся из `VAULT_PATH` или аргументом).
 
 ## Ошибки и fallbacks
 
@@ -370,8 +434,9 @@ header «Режим»): **авто** — решения арбитра прим�
 - **Fable: цепочка моделей** `claude-fable-5-1` → `claude-opus-5`. Переключение вниз: (а) unknown model / модель отвергнута; (б) context-overflow post-run (ошибка про превышение контекста в output) → перезапуск Bash B на следующей модели цепочки. Арбитр наследует резолвнутую `FABLE_MODEL`.
 - **Fable exit != 0 или bad JSON** — `$FABLE_OUT` либо plain-text ошибка, либо headless-envelope без извлекаемого вердикта (в т.ч. `stop_reason: refusal` на security-фокусных прогонах — для Fable это ожидаемый режим отказа, при нём перезапуск на claude-opus-5). Если каскад Шага 6 ничего не извлёк — stub unreliable. Покажи `cat "$FABLE_OUT"` для диагностики.
 - **Арбитр-сбой** — один retry → интервью по A3-fallback эвристике. Пайплайн не падает.
-- **Обе ветки crashed** — `consensus.verdict = unreliable`. Пайплайн сломан — диагностировать через raw output файлы. Интервью не запускать.
-- **Один верификатор упал** (stub unreliable) — интервью идёт по находкам выжившей ветки.
+- **Обе ветки crashed** (после перезапуска каждой) — `consensus.verdict = unreliable`, `coverage: partial`, обе метки в `dropped`. Пайплайн сломан — диагностировать через raw output файлы. Интервью не запускать; строка журнала всё равно пишется.
+- **Один верификатор упал** (перезапуск не помог) — ветка в `dropped`, `coverage: partial`, вердикт от выжившей, approve запрещён (`consensus.status` = needs-revision). Интервью идёт по находкам выжившей ветки, и в сводке это названо прямо: проверка неполная.
+- **Фаза C не отработала** — правки остаются применёнными, прогон не блокируется; в сводке строка «Перепроверка правок: не выполнена», в журнале `delta_by: none`.
 - **CLI зависнет** — timeout Bash-инструмента (600000 мс) убьёт процесс → notification с ошибкой → partial verdict из остальных верификаторов сохраняется. (Команды `timeout` в системе нет — не использовать.)
 - **Finding без `file`** (`null`) — целевой файл = TARGET_PATH.
 - **Все находки skipped** — Фаза B пропускается, сводка без применения.
@@ -382,4 +447,4 @@ header «Режим»): **авто** — решения арбитра прим�
 ## Структура файлов
 
 Карта каталога и таблица «что где менять» — `STRUCTURE.md` (для человека, рантайму не нужна).
-Артефакты прогона — в `AI/verif/`: `{BASE}--{codex,fable,merged,findings,arbiter,decisions}.json`, `{BASE}--verdict.md`.
+Артефакты прогона — в `AI/verif/`: `{BASE}--{codex,fable,merged,findings,arbiter,decisions,delta}.json`, `{BASE}--verdict.md`; журнал всех прогонов — `AI/verif/_runs.jsonl`.
