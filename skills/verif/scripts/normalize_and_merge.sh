@@ -1,25 +1,17 @@
 #!/usr/bin/env bash
-# Нормализация сырых ответов трёх CLI → merge → render → save.
+# Нормализация сырых ответов обоих CLI → merge → render → save.
 #
 # Каждый провайдер отдаёт verdict по-своему, и форма менялась между версиями CLI,
 # поэтому каскад из нескольких попыток обязателен — не «на всякий случай»:
 #   Codex — exec пишет прогресс-лог в stdout, verdict-JSON идёт ПОСЛЕДНЕЙ строкой;
-#   Fable — .structured_output, либо .result чистым JSON, либо .result в ```json-fence;
-#   Grok  — .structuredOutput (top-level, camelCase), либо .text как JSON,
-#           либо (grok CLI ≥1.0.3) .text = НЕСКОЛЬКО конкатенированных JSON-объектов
-#           (модель эмитит промежуточный JSON до tool-call'ов; CLI склеивает все
-#           сообщения, его собственный парсер падает на «trailing characters» и
-#           оставляет .structuredOutput = null) → берём ПОСЛЕДНИЙ валидный объект
-#           с полем verdict.
+#           GPT-6 Astra печатает его многострочным блоком после лога → третья ступень
+#           сканирует файл с конца и берёт последний валидный объект с verdict;
+#   Fable — .structured_output, либо .result чистым JSON, либо .result в ```json-fence.
 # Не распознали — пишем '{}', merge превратит его в stub unreliable (провайдер молчит,
 # а не «согласен»).
-# Отдельный класс сбоя Grok: прогон завершается за один ход «заготовкой» JSON, эмитнутой
-# ДО tool-call'ов (num_turns<=1, findings пустой, summary «Читаю план…»). По схеме она валидна,
-# и без гварда ниже в merged попадает «needs-revision, 0 findings» — консенсус искажён, сбой спрятан.
 #
 # Вход — переменные окружения:
-#   CODEX_OUT FABLE_OUT GROK_OUT   сырые stdout-файлы верификаторов
-#   GROK_PARTICIPATED              1, если Grok запускался (отсутствие != unreliable)
+#   CODEX_OUT FABLE_OUT            сырые stdout-файлы верификаторов
 #   MERGED_OUT VERDICT_MD          куда положить merged JSON и rendered markdown
 #   JSON_MODE                      1 → печатать merged JSON вместо рендера
 #   PROMPT_FILE CLAUDE_SCHEMA_FILE опц., удаляются в конце
@@ -34,7 +26,8 @@ cleanup() { rm -f "${TMP_FILES[@]:-}" 2>/dev/null || true; }
 trap cleanup EXIT
 
 # Срезать мусорные префиксы CLI (warning-строки до JSON): взять с первой строки, начинающейся с {
-strip_preamble() { sed -n '/^{/,$p' "$1"; }
+# Отсутствующий/пустой файл — не ошибка, а «ветка не ответила»: отдаём пусто, ниже станет '{}'.
+strip_preamble() { [[ -s "$1" ]] && sed -n '/^{/,$p' "$1" || true; }
 
 CODEX_VERDICT=$(mktemp -t verif-codex-verdict.XXXXXX.json)
 
@@ -47,7 +40,7 @@ elif [[ -s "$CODEX_OUT" ]] && python3 -c '
 # GPT-6 Astra (2026-09-05) печатает финальный verdict МНОГОСТРОЧНЫМ JSON после лога прогона,
 # а не одной последней строкой, как GPT-5.6 Sol: обе ступени выше дают FAIL и verdict молча
 # превращался в stub unreliable. Сканируем с конца файла и берём последний валидный объект
-# с полем verdict (тот же приём, что для склеенных ответов Grok ниже).
+# с полем verdict.
 import json, sys
 raw = open(sys.argv[1], encoding="utf-8", errors="ignore").read()
 dec = json.JSONDecoder()
@@ -87,57 +80,6 @@ else
 fi
 
 MERGE_ARGS=("codex:$CODEX_VERDICT" "fable:$FABLE_VERDICT")
-
-if [[ "${GROK_PARTICIPATED:-0}" == "1" ]]; then
-  GROK_ENV=$(mktemp -t verif-grok-env.XXXXXX.json)
-  TMP_FILES+=("$GROK_ENV")
-  strip_preamble "$GROK_OUT" > "$GROK_ENV"
-  GROK_VERDICT=$(mktemp -t verif-grok-verdict.XXXXXX.json)
-  TMP_FILES+=("$GROK_VERDICT")
-  if [[ -s "$GROK_ENV" ]] && jq -e '.structuredOutput' "$GROK_ENV" >/dev/null 2>&1; then
-    jq '.structuredOutput' "$GROK_ENV" > "$GROK_VERDICT"
-  elif [[ -s "$GROK_ENV" ]] && jq -e '.text | fromjson | .verdict' "$GROK_ENV" >/dev/null 2>&1; then
-    jq '.text | fromjson' "$GROK_ENV" > "$GROK_VERDICT"
-  elif [[ -s "$GROK_ENV" ]] && python3 -c '
-import json, sys
-d = json.load(open(sys.argv[1]))
-t = d.get("text") or ""
-dec = json.JSONDecoder()
-i = 0
-last = None
-while True:
-    j = t.find("{", i)
-    if j < 0:
-        break
-    try:
-        obj, end = dec.raw_decode(t, j)
-        if isinstance(obj, dict) and "verdict" in obj:
-            last = obj
-        i = end
-    except ValueError:
-        i = j + 1
-if last is None:
-    sys.exit(1)
-print(json.dumps(last, ensure_ascii=False))
-' "$GROK_ENV" > "$GROK_VERDICT" 2>/dev/null && jq -e '.verdict' "$GROK_VERDICT" >/dev/null 2>&1; then
-    : # последний валидный JSON-объект с verdict уже в $GROK_VERDICT
-  elif [[ -s "$GROK_ENV" ]] && jq -e '.verdict' "$GROK_ENV" >/dev/null 2>&1; then
-    jq . "$GROK_ENV" > "$GROK_VERDICT"
-  else
-    echo '{}' > "$GROK_VERDICT"
-  fi
-
-  # Гвард «пустого вердикта за один ход» (зафиксировано 2026-08-21 и 2026-09-05 на grok-4.6, CLI 1.0.3):
-  # num_turns <= 1 И findings == [] — это сбой, а не вердикт. Обнуляем в '{}', merge сделает stub
-  # unreliable; лечение — retry (можно в фоне, параллельно с идущими Codex/Fable).
-  GROK_TURNS=$(jq -r '.num_turns // empty' "$GROK_ENV" 2>/dev/null || true)
-  GROK_FINDINGS=$(jq '(.findings // []) | length' "$GROK_VERDICT" 2>/dev/null || true)
-  if [[ "$GROK_TURNS" =~ ^[0-9]+$ ]] && (( GROK_TURNS <= 1 )) && [[ "${GROK_FINDINGS:-}" == "0" ]]; then
-    echo '{}' > "$GROK_VERDICT"
-  fi
-
-  MERGE_ARGS+=("grok:$GROK_VERDICT")
-fi
 
 bash "$VERIFIER_ROOT/scripts/merge_verdicts.sh" "${MERGE_ARGS[@]}" > "$MERGED_OUT"
 

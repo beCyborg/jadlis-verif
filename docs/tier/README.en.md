@@ -2,44 +2,44 @@
 
 # Tier 2 — keys and your first plan check
 
-This is where every key in the stack gets set up, and where you make your first `verif` run — one file read by three AIs from three different companies.
+This is where every key in the stack gets set up, and where you make your first `verif` run — one file read by two AIs from two different companies.
 
 ## Why
 
 The costly mistake is not the one you missed. It is the one you argued yourself into.
 
-Ask a single chat to "critique my plan" and it sees both the plan and your reasoning — so it completes your logic instead of breaking it: it agrees and reinforces. `verif` works the other way round: the same file is read by three AIs from three different vendors, separately, knowing neither the author nor the author's explanations.
+Ask a single chat to "critique my plan" and it sees both the plan and your reasoning — so it completes your logic instead of breaking it: it agrees and reinforces. `verif` works the other way round: the same file is read by two AIs from two different vendors, separately, knowing neither the author nor the author's explanations.
 
 Five steps of the mechanism:
 
-1. Three readings in isolation — each has its own search, none sees the others' conclusions.
+1. Two readings in isolation — each has its own search, neither sees the other's conclusions.
 2. One answer format — the verdicts are comparable.
 3. The worst branch wins, not the average: one "unreliable" makes the whole verdict unreliable.
-4. A blind judge: the arbiter rules on findings without knowing whose each one is (labels A / B / C).
-5. A batch of questions back to you — a human decides, not the pipeline.
+4. A blind judge: the arbiter rules on findings without knowing whose each one is (labels A / B).
+5. A walk through the findings with you — a human decides, not the pipeline: "auto" (the plugin follows the arbiter's calls and asks only about the strong forks) or "manual" (one question per finding).
 
 ## What it looks like
 
 ![A business-plan canvas on three legs, robotic arms pulling the legs out](https://github.com/beCyborg/jadlis-hub/blob/main/docs/img/01-verif-01.webp?raw=1)
 
-One run, end to end (tag `jadlis-verif--v2.0.0`):
+One run, end to end (tag `jadlis-verif--v3.0.0`):
 
 1. **Your file** — plan, research or document.
-2. **Three branches, separately** — Codex (`gpt-6-astra`), Claude (Fable 5), Grok (`grok-4.6`); without Grok — two branches.
+2. **Two branches, separately** — Codex (`gpt-6-astra`) and Claude (Fable 5.1).
 3. **Merge on the worst** verdict.
-4. **Arbiter Fable 5** — sources hidden: A / B / C.
-5. **A batch of questions for you** → you decide.
+4. **Arbiter Fable 5** — sources hidden: A / B.
+5. **The findings walk-through** — "auto" or "manual" → you decide.
 
 <details>
 <summary>Synthetic verdict sample (invented data)</summary>
 
 ```
-Short version: needs revision — 9 raw findings from 3 checkers, 3 of them serious.
+Short version: needs revision — 9 raw findings from 2 checkers, 3 of them serious.
 1. The plan assumes the service has a free tier — the pricing page has none.
 2. Step 4 writes to a shared settings file directly; a parallel session would overwrite it.
 3. There is no "what if the key is missing" branch — step 6 dies with a cryptic error instead of skipping.
 
-VERDICT: NEEDS-REVISION  (Codex: needs-revision · Fable: needs-revision · Grok: approve)
+VERDICT: NEEDS-REVISION  (Codex: needs-revision · Fable: needs-revision)
 
 FINDINGS (9):
   [HIGH]   Service has no free tier            (factual, verifiable)  — plan.md:41
@@ -48,7 +48,7 @@ FINDINGS (9):
   [LOW]    Docs link returns 404               (factual, verifiable)  — plan.md:12
 
 Arbiter: 6 apply · 2 skip (1 refuted by counter-evidence) · 1 discuss
-Artifacts: AI/verif/2026-09-06--plan--{codex,fable,grok,merged,arbiter}.json
+Artifacts: AI/verif/2026-09-06--plan--{codex,fable,merged,arbiter}.json
 ```
 
 </details>
@@ -88,19 +88,18 @@ Assumptions: the provider has a free tier up to 10,000 emails; the move does not
 Steps: 1) buy the domain, 2) migrate the list, 3) shut the old service down the same day.
 ```
 
-Optional, but it changes the result noticeably:
+What strengthens the result:
 
-- **Codex CLI** (ChatGPT subscription) — the mandatory branch: without it the plugin is not installed.
-- **Grok CLI** (Grok subscription) — the third branch, $0 on top of the subscription. Without it the run goes dual; in tier 3 you also lose the `grokweb` and `twitter` channels.
+- **Codex CLI** (ChatGPT subscription) — the second branch, a model family of its own. That is the whole point of the run.
 
-Missing both CLIs does not break the run: one Claude branch is left, but the whole point — independence of the readings — is gone. Read a single-branch verdict as an opinion, not as a check.
+A missing Codex CLI does not break the run: one Claude branch is left, but the whole point — independence of the readings — is gone. Read a single-branch verdict as an opinion, not as a check.
 
 ## Usage
 
 Three scenarios, three commands:
 
 ```text
-/verif --file Plan.md                    # full run: three branches → arbiter → questions
+/verif --file Plan.md                    # full run: two branches → arbiter → questions
 /verif --file Research.md --report-only  # report only, no questions, no edits
 /verif --file Doc.md --only fable        # a single branch: a quick rough pass
 ```
@@ -109,7 +108,8 @@ Worth knowing as it runs:
 
 - Branches run in parallel and report as they finish — the first verdict lands before the others.
 - The file type (`plan` / `research` / `doc`) is detected automatically; `--type` sets it explicitly.
-- Every artifact lands in the vault under `AI/verif/` — one json per branch, the merged verdict, the decisions file.
+- Before the findings walk-through the plugin asks for a mode: "auto" — it applies the arbiter's calls itself, asks at most four questions about the strong forks and prints what it decided before applying; "manual" — one question per finding. If the arbiter did not answer, it goes manual straight away.
+- Every artifact lands in the vault under `AI/verif/` — one json per branch, the merged verdict, the decisions file (which records what you decided and what auto mode did).
 - Quality depends on what you hand over: an assumption written out is a target; an assumption dissolved into prose is a mine nobody finds.
 
 ## Limits and cost
@@ -128,7 +128,6 @@ What costs money:
 | Brave Search API, Search plan | ≈$0.005 per request | yes |
 | Firecrawl | per plan credits | yes |
 | ChatGPT subscription (Codex CLI) | per subscription tier | yes — the Codex branch is mandatory |
-| Grok subscription (Grok CLI) | $0 on top of the subscription | no — the Grok branch |
 
 No branch may run longer than 600,000 ms — after that the timeout cuts it off and the verdict is assembled from the survivors. A silent branch is marked as a failure, never as agreement.
 

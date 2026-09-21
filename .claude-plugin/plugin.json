@@ -1,9 +1,9 @@
 {
   "$schema": "https://json.schemastore.org/claude-code-plugin-manifest.json",
   "name": "jadlis-verif",
-  "version": "2.0.0",
-  "displayName": "Jadlis — проверка плана тремя моделями",
-  "description": "Codex, Fable и Grok порознь рвут план или документ, арбитр сводит находки, батч-интервью, правки. Автономен: нужны Codex CLI (подписка ChatGPT) и Grok CLI; веб-проверка первоисточников — через плагин jadlis-search, если он установлен.",
+  "version": "3.0.0",
+  "displayName": "Jadlis — проверка плана двумя моделями",
+  "description": "Codex и Fable порознь рвут план или документ, арбитр сводит находки, батч-интервью, правки. Автономен: нужен Codex CLI (подписка ChatGPT); веб-проверка первоисточников — через плагин jadlis-search, если он установлен.",
   "author": {
     "name": "Be Cyborg"
   },
@@ -14,7 +14,7 @@
     "verification",
     "adversarial",
     "codex",
-    "grok",
+    "fable",
     "plan-review"
   ],
   "userConfig": {
