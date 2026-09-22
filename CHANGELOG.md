@@ -5,6 +5,18 @@
 
 ## [Unreleased]
 
+## [3.1.1] — 2026-09-22 — Переход на Opus 5.5 / Switch to Opus 5.5
+
+### Для человека
+
+- Если Fable 5.1 недоступна или отказалась, запасная ветка проверки теперь идёт на Opus 5.5 вместо Opus 5.
+- Плагин требует Claude Code ≥ 2.1.280: более старые версии не знают новую модель.
+
+### For agents
+
+- Changed: `skills/verif/SKILL.md` — `FABLE_MODEL_FALLBACK="claude-opus-5"` → `"claude-opus-5-5"` (Opus 5.5, 1M context native, no `[1m]` suffix), the model chain and the refusal-restart note in the gotchas list now name `claude-opus-5-5`, the review-direction caveat names "Opus 5.5/Fable 5"; `skills/verif/system-prompts/fable-verifier.md` header → "fallback Opus 5.5". `FABLE_MODEL_PRIMARY`, `CODEX_MODEL` and effort values unchanged.
+- Migration: requires Claude Code ≥ 2.1.280 — older versions may reject the unknown model ID `claude-opus-5-5` when the Fable branch falls back. `skills/verif/TESTS.md` keeps `claude-opus-5` as test history.
+
 ## [3.1.0] — 2026-09-21
 
 ### Для человека
