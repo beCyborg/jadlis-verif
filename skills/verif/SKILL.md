@@ -1,19 +1,19 @@
 ---
 name: verif
-description: "Dual adversarial verification of a plan/research/doc: Codex + Fable in parallel, arbiter merge, batch interview, fixes, re-check of the fixes. Flags: --only codex|fable, --report-only, --no-recheck, --json. Triggers: /verif, verify plan, adversarial review, fact-check. RU triggers: верифицируй план, проверь план, проверь ресерч на факты, фактчек документа. Do NOT use for: code → /code-review; research → /full-research."
+description: "Dual adversarial verification of a plan/research/doc: Codex + Claude Opus 5.5 in parallel, arbiter merge, batch interview, fixes, re-check of the fixes. Flags: --only codex|fable, --report-only, --no-recheck, --json. Triggers: /verif, verify plan, adversarial review, fact-check. RU triggers: верифицируй план, проверь план, проверь ресерч на факты, фактчек документа. Do NOT use for: code → /code-review; research → /full-research."
 argument-hint: "[focus] [--file <path>] [--type plan|research|doc] [--only codex|fable] [--report-only] [--no-recheck] [--json]"
 allowed-tools: Read, Glob, Write, Edit, MultiEdit, AskUserQuestion, Task, Agent, Bash(codex:*), Bash(claude:*), Bash(mktemp:*), Bash(cat:*), Bash(ls:*), Bash(jq:*), Bash(rm:*), Bash(trap:*), Bash(grep:*), Bash(echo:*), Bash(ln:*), Bash(bash:*), Bash(test:*), Bash(chmod:*), Bash(mkdir:*), Bash(date:*), Bash(sed:*), Bash(wc:*), Bash(stat:*), Bash(cp:*), Bash(diff:*), Bash(shasum:*), Bash(awk:*), Bash(tr:*), Bash(printf:*), Bash(python3:*)
 ---
 
-# /verif — Dual adversarial верификация (Codex + Fable 5) с арбитром
+# /verif — Dual adversarial верификация (Codex + Claude Opus 5.5) с арбитром
 
-Тонкий orchestrator двух независимых верификаторов: OpenAI GPT-6 Astra через `codex exec`, Anthropic Claude Fable 5 через `claude -p` (headless). Оба возвращают JSON по единой `schema/verdict.json`. Результаты сливаются через `scripts/merge_verdicts.sh` (strict hierarchy: unreliable > needs-revision > approve, N провайдеров с метками) и рендерятся через `scripts/render_merged.sh`.
+Тонкий orchestrator двух независимых верификаторов: OpenAI GPT-6 Astra через `codex exec`, Anthropic Claude Opus 5.5 через `claude -p` (headless; ветка по-прежнему зовётся `fable` — метка историческая). Оба возвращают JSON по единой `schema/verdict.json`. Результаты сливаются через `scripts/merge_verdicts.sh` (strict hierarchy: unreliable > needs-revision > approve, N провайдеров с метками) и рендерятся через `scripts/render_merged.sh`.
 
-Provider-agnostic policy — `${CLAUDE_PLUGIN_DATA}/verif-homes/codex-home/AGENTS.md` для Codex, `system-prompts/fable-verifier.md` для Fable (codex-home разворачивается из `${CLAUDE_PLUGIN_ROOT}/assets/verif-homes/` при первом запуске). Templates — `prompts/{plan,research,doc}.md`.
+Provider-agnostic policy — `${CLAUDE_PLUGIN_DATA}/verif-homes/codex-home/AGENTS.md` для Codex, `system-prompts/fable-verifier.md` для Claude-ветки (codex-home разворачивается из `${CLAUDE_PLUGIN_ROOT}/assets/verif-homes/` при первом запуске). Templates — `prompts/{plan,research,doc}.md`.
 
-**Архитектура v6 (v6.1 — интервью простым языком: арбитр отдаёт `plain.*`, вопросы строятся по `references/plain-language.md`; v7 — развилка режима интервью «авто / вручную» перед первым батчем; v8 — статус покрытия вместо заглушки, Фаза C и журнал запусков):** single-turn запуск, два параллельных `Bash(run_in_background: true)`. Completion notification приходит независимо для каждого — скилл показывает результат каждого завершившегося верификатора сразу (стриминг). После merge — **этап Арбитра**: headless Fable 5 (high) судит дедуплицированные находки в контексте целевого файла, кросс-чекает провайдеров и помечает опровергнутые. Затем Фаза A: батч-интервью по находкам с рекомендациями арбитра (сначала развилка «авто / вручную»), Фаза B: параллельное применение одобренных правок субагентами (один файл = один субагент), Фаза C: один ограниченный проход Codex по диффу правок. Каждый прогон дописывает строку в журнал `AI/verif/_runs.jsonl`.
+**Архитектура v6 (v6.1 — интервью простым языком: арбитр отдаёт `plain.*`, вопросы строятся по `references/plain-language.md`; v7 — развилка режима интервью «авто / вручную» перед первым батчем; v8 — статус покрытия вместо заглушки, Фаза C и журнал запусков):** single-turn запуск, два параллельных `Bash(run_in_background: true)`. Completion notification приходит независимо для каждого — скилл показывает результат каждого завершившегося верификатора сразу (стриминг). После merge — **этап Арбитра**: headless Opus 5.5 (high) судит дедуплицированные находки в контексте целевого файла, кросс-чекает провайдеров и помечает опровергнутые. Затем Фаза A: батч-интервью по находкам с рекомендациями арбитра (сначала развилка «авто / вручную»), Фаза B: параллельное применение одобренных правок субагентами (один файл = один субагент), Фаза C: один ограниченный проход Codex по диффу правок. Каждый прогон дописывает строку в журнал `AI/verif/_runs.jsonl`.
 
-> **Оговорка о направлении ревью (KDD'26, arXiv 2607.21656, 116 задач):** в чистой паре «писатель→ревьюер» ревью Codex работ Claude РОНЯЛО pass rate 91,4%→82,8% (обратное направление поднимало 71,6%→89,7%; модели прошлого поколения, ревьюер не запускал тесты). Наш пайплайн от этого защищён арбитром-Fable — поэтому вердиктам одного Codex (`--only codex`) по Claude-артефактам без арбитра не доверять слепо; при расхождении провайдеров вес у арбитра. Перенос выводов на Opus 5.5/Fable 5 не проверен — свой A/B при случае.
+> **Оговорка о направлении ревью (KDD'26, arXiv 2607.21656, 116 задач):** в чистой паре «писатель→ревьюер» ревью Codex работ Claude РОНЯЛО pass rate 91,4%→82,8% (обратное направление поднимало 71,6%→89,7%; модели прошлого поколения, ревьюер не запускал тесты). Наш пайплайн от этого защищён арбитром-Claude — поэтому вердиктам одного Codex (`--only codex`) по Claude-артефактам без арбитра не доверять слепо; при расхождении провайдеров вес у арбитра. Перенос выводов на Opus 5.5 не проверен — свой A/B при случае.
 
 ## Аргументы
 
@@ -46,7 +46,7 @@ Read target. Если `--type` не указан:
 
 ## Шаг 3: Режим выполнения
 
-- **Default (dual):** Codex + Fable параллельно (два `Bash(run_in_background: true)`
+- **Default (dual):** Codex + Claude-ветка (Opus 5.5) параллельно (два `Bash(run_in_background: true)`
   в одном сообщении) → notifications → merge + render → Арбитр → Фаза A → Фаза B → Фаза C → журнал.
 - **`--only codex|fable`:** соответствующий Bash в одиночку, рендер single-verifier
   (Шаг 7), без арбитра, интервью и Фазы C.
@@ -99,9 +99,11 @@ EFFORT_CODEX="high"
 EFFORT_FABLE="high"
 CODEX_MODEL="gpt-6-astra"   # GPT-6 Astra с 05.09.2026; effort `high` с 06.09.2026 по ресёрчу «Effort для плана и кода» (выше high растут токены, не качество); `ultra` = авто-делегирование, не нужен; откат = `gpt-5.6-sol` (в каталоге жив)
 
-# Выбор Fable-модели: Fable 5.1 — 1M-контекст нативно, big-file guard снят 01.09.2026.
-FABLE_MODEL_PRIMARY="claude-fable-5-1"
-FABLE_MODEL_FALLBACK="claude-opus-5-5"
+# Модель Claude-ветки. Метка `fable` (FABLE_*, FABLE_OUT, EFFORT_FABLE, merge-метка, ключи _runs.jsonl)
+# историческая: с 3.1.2 (29.09.2026) ветка идёт на Opus 5.5; имена не меняются ради схемы журнала и тестов.
+# Opus 5.5 — 1M-контекст нативно. Запасная — Opus 5 (прошлое поколение, классификаторы уже): отказ / переполнение контекста.
+FABLE_MODEL_PRIMARY="claude-opus-5-5"
+FABLE_MODEL_FALLBACK="claude-opus-5"
 FABLE_MODEL="$FABLE_MODEL_PRIMARY"
 
 # Claude-совместимая производная схема: structured outputs Anthropic не поддерживает
@@ -217,17 +219,17 @@ claude -p "$(cat "{PROMPT_FILE}")" \
 
 `< /dev/null` обязателен: без него фоновый `claude -p` ждёт stdin и печатает warning-строку ПЕРЕД JSON-envelope — ломает парсинг (источник нулевых прогонов v5).
 
-Сообщи пользователю: "Верификаторы запущены параллельно (Codex GPT-6 Astra + Fable 5). Результаты будут появляться по мере завершения..."
+Сообщи пользователю: "Верификаторы запущены параллельно (Codex GPT-6 Astra + Claude Opus 5.5). Результаты будут появляться по мере завершения..."
 
 ### Обработка notifications
 
 При каждом notification:
 1. Определить какой верификатор завершился (по тексту notification — он содержит команду и путь output файла).
 2. Прочитать output файл, нормализовать (см. Шаг 6), отрендерить single verdict через jq.
-3. Показать: `"✓ {Codex|Fable} завершён. Ожидание остальных..."`
+3. Показать: `"✓ {Codex|Claude} завершён. Ожидание остальных..."`
 4. **Ветка не дала вердикта** (exit != 0, пустой файл, каскад Шага 6 ничего не извлёк) —
    **один перезапуск той же ветки тем же вызовом** (тот же Bash A/B, тот же промпт, вывод в тот
-   же файл), с сообщением «{Codex|Fable} не ответил — перезапускаю один раз». Второй раз пусто —
+   же файл), с сообщением «{Codex|Claude} не ответил — перезапускаю один раз». Второй раз пусто —
    перезапусков больше нет, ветка уходит в `dropped` на Шаге 6. Перезапускаем **то же место, а
    не другое семейство**: по ресёрчу («Состязательная верификация», раздел «Покрытие и повторные
    прогоны») повторный прогон того же проверяющего добавляет покрытия, а подмена семейства — нет.
@@ -286,7 +288,7 @@ Rendered verdict и пути:
 
 ### Single-verifier режимы
 
-Вердикт рендерится напрямую, без merge. Codex отдаёт готовый JSON; Fable сначала
+Вердикт рендерится напрямую, без merge. Codex отдаёт готовый JSON; Claude-ветка сначала
 прогнать через тот же каскад извлечения, что и в Шаге 6 (`.structured_output` →
 `.result | fromjson` → ```json-fence); каскад целиком — в
 `scripts/normalize_and_merge.sh`.
@@ -323,7 +325,7 @@ jq -r '
 
 ### Arb-2. Headless-вызов арбитра (run_in_background: true, timeout: 600000)
 
-**Анонимизация провайдеров** (family-bias: арбитр-Fable систематически переоценивает находки Fable; подтверждено ресерчем): выбери случайный маппинг провайдеров на метки `Verifier A/B`, запомни его для деанонимизации в интервью. В промпте арбитра все упоминания провайдеров (summaries и `sources` находок) заменить на анонимные метки; `$FINDINGS_OUT` на диске остаётся с реальными именами.
+**Анонимизация провайдеров** (family-bias: арбитр-Claude систематически переоценивает находки Claude-ветки; подтверждено ресерчем): выбери случайный маппинг провайдеров на метки `Verifier A/B`, запомни его для деанонимизации в интервью. В промпте арбитра все упоминания провайдеров (summaries и `sources` находок) заменить на анонимные метки; `$FINDINGS_OUT` на диске остаётся с реальными именами.
 
 Сборка промпта: Write во временный файл `ARBITER_PROMPT_FILE` (mktemp) с содержимым:
 
@@ -340,7 +342,7 @@ FINDINGS TO JUDGE (deduplicated; sources anonymized to A/B):
 Judge each finding per your role instructions. Return one assessment per finding id.
 ```
 
-Запуск (арбитр наследует резолвнутую Fable-модель):
+Запуск (арбитр наследует резолвнутую модель Claude-ветки, `FABLE_MODEL`):
 
 ```bash
 claude -p "$(cat "{ARBITER_PROMPT_FILE}")" \
@@ -353,7 +355,7 @@ claude -p "$(cat "{ARBITER_PROMPT_FILE}")" \
   < /dev/null > "{ARBITER_OUT}.raw" 2>&1
 ```
 
-Сообщи: "Арбитр (Fable 5) оценивает {N} находок..."
+Сообщи: "Арбитр (Opus 5.5) оценивает {N} находок..."
 
 `{PLAIN_RULES}` дописывается вторым файлом в system prompt: арбитр заполняет `plain.*` (шесть полей для человека) по тем же правилам, по которым главный тред строит вопросы интервью. `plain` намеренно не в `required` схемы: если арбитр его не заполнил у какого-то id — судейство этого id берётся, plain-поля дописывает главный тред (частичный fallback в `interview-apply.md`).
 
@@ -403,7 +405,7 @@ echo "interview_done=$(date +%s)" >> "$RUN_TIMES"  # после A4, до Фаз�
 Только после Фазы B и только если в ней что-то применено. Один ограниченный проход **Codex** по
 диффу правок (другое семейство, чем у субагентов-исправителей), три вопроса — закрыта ли каждая
 находка, не сломано ли соседнее, не вырос ли объём; `MAX_FIX_ROUNDS = 2`. Codex недоступен —
-откат на Fable headless (`delta_by: fable`). Пропуск: нет принятых находок, `--report-only`,
+откат на Claude-ветку headless (`delta_by: fable`). Пропуск: нет принятых находок, `--report-only`,
 `--json`, `--only`, `--no-recheck`.
 
 Снимки файлов (C0), сборка диффа и замороженного списка, промпт, вызовы, круг доправок,
@@ -431,8 +433,8 @@ bash "$LOG_RUN" \
 ## Ошибки и fallbacks
 
 - **Background Bash exit != 0** — notification содержит exit code. Прочитать output файл для диагностики. `merge_verdicts.sh` увидит невалидный JSON → `unreliable` stub. Покажи пользователю tail stderr + диагностику CLI: `codex login status` (auth) и `codex exec -m gpt-6-astra "ping" < /dev/null` (живость модели).
-- **Fable: цепочка моделей** `claude-fable-5-1` → `claude-opus-5-5`. Переключение вниз: (а) unknown model / модель отвергнута; (б) context-overflow post-run (ошибка про превышение контекста в output) → перезапуск Bash B на следующей модели цепочки. Арбитр наследует резолвнутую `FABLE_MODEL`.
-- **Fable exit != 0 или bad JSON** — `$FABLE_OUT` либо plain-text ошибка, либо headless-envelope без извлекаемого вердикта (в т.ч. `stop_reason: refusal` на security-фокусных прогонах — для Fable это ожидаемый режим отказа, при нём перезапуск на claude-opus-5-5). Если каскад Шага 6 ничего не извлёк — stub unreliable. Покажи `cat "$FABLE_OUT"` для диагностики.
+- **Claude-ветка (метка `fable`): цепочка моделей** `claude-opus-5-5` → `claude-opus-5`. Переключение вниз: (а) unknown model / модель отвергнута; (б) context-overflow post-run (ошибка про превышение контекста в output) → перезапуск Bash B на следующей модели цепочки. Арбитр наследует резолвнутую `FABLE_MODEL`.
+- **Claude-ветка (`fable`) exit != 0 или bad JSON** — `$FABLE_OUT` либо plain-text ошибка, либо headless-envelope без извлекаемого вердикта (в т.ч. `stop_reason: refusal` на security-фокусных прогонах — ожидаемый режим отказа Claude-моделей, при нём перезапуск на claude-opus-5). Если каскад Шага 6 ничего не извлёк — stub unreliable. Покажи `cat "$FABLE_OUT"` для диагностики.
 - **Арбитр-сбой** — один retry → интервью по A3-fallback эвристике. Пайплайн не падает.
 - **Обе ветки crashed** (после перезапуска каждой) — `consensus.verdict = unreliable`, `coverage: partial`, обе метки в `dropped`. Пайплайн сломан — диагностировать через raw output файлы. Интервью не запускать; строка журнала всё равно пишется.
 - **Один верификатор упал** (перезапуск не помог) — ветка в `dropped`, `coverage: partial`, вердикт от выжившей, approve запрещён (`consensus.status` = needs-revision). Интервью идёт по находкам выжившей ветки, и в сводке это названо прямо: проверка неполная.

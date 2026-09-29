@@ -5,6 +5,20 @@
 
 ## [Unreleased]
 
+## [3.1.2] — 2026-09-29 — Claude-ветка на Opus 5.5 / Claude branch on Opus 5.5
+
+### Для человека
+
+- Вторая ветка проверки и арбитр теперь работают на Opus 5.5 вместо Fable 5.1. Если Opus 5.5 отказалась или не влезла в контекст, ветка один раз перезапускается на Opus 5.
+- Зачем: по ресёрчу «Opus 5.5 на моих задачах» Opus 5.5 на high по индексу Artificial Analysis держится вровень с Fable 5.1 на max, а задача обходится примерно вчетверо дешевле. Взгляд модели другого семейства в проверке по-прежнему даёт Codex.
+
+### For agents
+
+- Changed: `skills/verif/SKILL.md` — `FABLE_MODEL_PRIMARY="claude-fable-5-1"` → `"claude-opus-5-5"`, `FABLE_MODEL_FALLBACK="claude-opus-5-5"` → `"claude-opus-5"`; model-chain and refusal-restart gotchas, headings, user-facing messages and the arbiter line now name Opus 5.5. `system-prompts/fable-verifier.md` and `system-prompts/arbiter.md` headers, `references/delta-recheck.md` fallback wording, `README*.md`, `docs/tier/README*.md`, `plugin.json` description and keyword (`fable` → `opus`) follow.
+- Unchanged on purpose: the `fable` branch label — `FABLE_*` variables, `FABLE_OUT`, `EFFORT_FABLE`, `--only codex|fable`, merge labels, `delta_by: fable`, `_runs.jsonl` keys, file `fable-verifier.md`. Renaming them would break the run-log schema and the saved-run regressions; a comment next to `FABLE_MODEL_PRIMARY` marks the label as historical.
+- Tests: `skills/verif/TESTS.md` gains a PENDING row for the first live dual run on `claude-opus-5-5`; past PASS rows naming `claude-fable-5-1` stay as history.
+- Migration: none; the branch keeps its label, only the model behind it changes.
+
 ## [3.1.1] — 2026-09-22 — Переход на Opus 5.5 / Switch to Opus 5.5
 
 ### Для человека

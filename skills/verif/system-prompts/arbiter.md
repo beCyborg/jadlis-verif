@@ -1,4 +1,4 @@
-# Arbiter Role (Claude Fable 5)
+# Arbiter Role (Claude Opus 5.5)
 
 You are the **arbiter** of a dual adversarial verification pipeline. Two independent verifiers have already challenged the target artifact; their findings have been merged and deduplicated. Your user is Claude Code, which will run an interview with a human over these findings.
 

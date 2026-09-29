@@ -24,7 +24,7 @@ This is my workbench published as it is, not a product: whatever I stopped using
 
 | By hand | With an AI chat | With this plugin |
 |---|---|---|
-| **Who looks for the hole.** The plan is re-read by whoever wrote it — and finds typos instead of holes. | It is checked by the same model that wrote the plan. | Codex and Fable read the plan separately and do not see each other's answers. |
+| **Who looks for the hole.** The plan is re-read by whoever wrote it — and finds typos instead of holes. | It is checked by the same model that wrote the plan. | Codex and Claude (Opus 5.5) read the plan separately and do not see each other's answers. |
 | **Whose frame the reviewer uses.** One head, one angle. | Your own frame, retold back to you: whatever you did not ask about is not there. | The two frames differ — so you also see what you never asked about. |
 | **What to do with a heap of findings.** The list sits in your notes and goes stale. | You get one more long list, and half of the edits you roll back later. | The arbiter merges the findings into one list: what several found weighs more than what one wrote beautifully. |
 | **How a finding becomes an edit.** By hand, if you ever get round to it. | Discussed and forgotten. | A batch interview over every finding: accept, reject or rewrite — and only then the edits. |
@@ -36,7 +36,7 @@ This is my workbench published as it is, not a product: whatever I stopped using
 ![One plan goes to the verifying models separately, the arbiter merges the findings, you answer on each one, then the edits](docs/img/how-jadlis-verif.webp)
 
 Going in — your plan as a single file.
-Inside — Codex and Fable take it apart in parallel and do not see each other's answers; the
+Inside — Codex and Claude (Opus 5.5) take it apart in parallel and do not see each other's answers; the
 arbiter merges the findings into one list and raises whatever the readings agreed on.
 Coming out — a walk through the findings: accept, reject or rewrite, and only what you accepted goes
 into the edits. You pick how it goes: **auto** — the plugin applies the arbiter's calls itself and
@@ -89,7 +89,7 @@ arbiter.
 
 You have a renovation plan: the order of the works, what you do yourself, where you economise, when
 you move in. Two models read it separately. Codex picks at the order of the works: the screed and
-its drying time come earlier than the delivery assumes. Fable finds something else: there is no
+its drying time come earlier than the delivery assumes. Claude finds something else: there is no
 acceptance check after a stage anywhere in the plan, the rework will surface at the end — and it asks
 about what is not in the plan at all, what happens if the contractor disappears for a week. The
 arbiter merges this into one list and shows where both of them landed on the same thing. You walk the
