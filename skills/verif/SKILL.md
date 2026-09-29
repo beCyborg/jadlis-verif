@@ -187,9 +187,9 @@ echo "  PLAIN_RULES=$PLAIN_RULES"
 
 Два `Bash(run_in_background: true)` вызова — в **одном сообщении**, иначе они выполнятся последовательно и прогон растянется вдвое. При `--only` — один Bash.
 
-Каждый Bash — фоновый процесс с отдельным completion notification. В системе нет команды `timeout` — предельное время задаёт timeout самого Bash-инструмента (600000 мс на вызов).
+Каждый Bash — фоновый процесс с отдельным completion notification. В системе нет команды `timeout` — предельное время задаёт timeout самого Bash-инструмента: 2700000 мс (45 мин) на фоновый вызов. 600000 мс — потолок только для foreground-вызова; у `run_in_background` потолок 7200000 мс.
 
-### Bash A: Codex (run_in_background: true, timeout: 600000)
+### Bash A: Codex (run_in_background: true, timeout: 2700000)
 
 ```bash
 CODEX_HOME="{CODEX_HOME_DIR}" codex exec \
@@ -204,7 +204,7 @@ CODEX_HOME="{CODEX_HOME_DIR}" codex exec \
 
 Плейсхолдеры `{CODEX_MODEL}` / `{EFFORT_CODEX}` / `{EFFORT_FABLE}` / `{FABLE_MODEL}` подставляются из `VERIF_PATHS` prelude — литералы в Bash A/B не дублировать. `service_tier="default"` — в плагине стандартный тир; локальный пин `priority` (−15 % латентности, 15.08) — личная настройка получателя, в дистрибутив не входит.
 
-### Bash B: Fable (run_in_background: true, timeout: 600000)
+### Bash B: Fable (run_in_background: true, timeout: 2700000)
 
 ```bash
 claude -p "$(cat "{PROMPT_FILE}")" \
@@ -323,7 +323,7 @@ jq -r '
 4. Записать (Write) `$FINDINGS_OUT` — массив объектов: `{id, title, body, severity, confidence, claim_type, recommendation, evidence_urls, sources, file, line_start, line_end}`.
 5. **0 находок** → пропустить Арбитра и Фазы A/B. Сообщить: «Все ветки без findings — применять нечего». Конец.
 
-### Arb-2. Headless-вызов арбитра (run_in_background: true, timeout: 600000)
+### Arb-2. Headless-вызов арбитра (run_in_background: true, timeout: 2700000)
 
 **Анонимизация провайдеров** (family-bias: арбитр-Claude систематически переоценивает находки Claude-ветки; подтверждено ресерчем): выбери случайный маппинг провайдеров на метки `Verifier A/B`, запомни его для деанонимизации в интервью. В промпте арбитра все упоминания провайдеров (summaries и `sources` находок) заменить на анонимные метки; `$FINDINGS_OUT` на диске остаётся с реальными именами.
 
@@ -439,7 +439,7 @@ bash "$LOG_RUN" \
 - **Обе ветки crashed** (после перезапуска каждой) — `consensus.verdict = unreliable`, `coverage: partial`, обе метки в `dropped`. Пайплайн сломан — диагностировать через raw output файлы. Интервью не запускать; строка журнала всё равно пишется.
 - **Один верификатор упал** (перезапуск не помог) — ветка в `dropped`, `coverage: partial`, вердикт от выжившей, approve запрещён (`consensus.status` = needs-revision). Интервью идёт по находкам выжившей ветки, и в сводке это названо прямо: проверка неполная.
 - **Фаза C не отработала** — правки остаются применёнными, прогон не блокируется; в сводке строка «Перепроверка правок: не выполнена», в журнале `delta_by: none`.
-- **CLI зависнет** — timeout Bash-инструмента (600000 мс) убьёт процесс → notification с ошибкой → partial verdict из остальных верификаторов сохраняется. (Команды `timeout` в системе нет — не использовать.)
+- **CLI зависнет** — timeout Bash-инструмента (2700000 мс) убьёт процесс → notification с ошибкой → partial verdict из остальных верификаторов сохраняется. (Команды `timeout` в системе нет — не использовать.)
 - **Finding без `file`** (`null`) — целевой файл = TARGET_PATH.
 - **Все находки skipped** — Фаза B пропускается, сводка без применения.
 - **Субагент не смог применить правку** — отметить в сводке (`skipped: <причина>` от субагента), пайплайн не падает.

@@ -5,6 +5,16 @@
 
 ## [Unreleased]
 
+## [3.1.4] — 2026-09-30 — Фоновые вызовы до 45 минут / Background calls up to 45 min
+
+### Для человека
+
+- Ветки проверки и арбитр больше не обрываются на 10-й минуте: на xhigh длинный план проверяется дольше, и старый лимит убивал вызов раньше, чем он успевал ответить.
+
+### Technical
+
+- Changed: `skills/verif/SKILL.md` Bash A/B and Arb-2, `references/delta-recheck.md` — `timeout` 600000 → 2700000 ms. 600000 is the foreground cap only; `run_in_background` allows up to 7200000. Failure-mode note updated to match.
+
 ## [3.1.3] — 2026-09-30 — Claude-ветка и арбитр на xhigh / Claude branch and arbiter at xhigh
 
 ### Для человека

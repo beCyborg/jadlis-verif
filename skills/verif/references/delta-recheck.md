@@ -84,7 +84,7 @@ Answer the three questions per your role instructions. Return one `closed` entry
 ```
 
 Запуск — тот же шаблон Bash A, что у Codex-ветки (Шаг 5 SKILL.md), `run_in_background: true`,
-timeout 600000, песочница только на чтение:
+timeout 2700000, песочница только на чтение:
 
 ```bash
 CODEX_HOME="{CODEX_HOME_DIR}" codex exec \
