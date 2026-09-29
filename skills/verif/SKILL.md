@@ -96,7 +96,7 @@ fi
 
 # Hardcoded settings
 EFFORT_CODEX="high"
-EFFORT_FABLE="high"
+EFFORT_FABLE="xhigh"   # 3.1.3 (30.09.2026): Claude-ветка и арбитр — финальные агенты цепочки, xhigh по ресёрчу «Opus 5.5 на моих задачах» (ревью на xhigh находит больше, 3× время)
 CODEX_MODEL="gpt-6-astra"   # GPT-6 Astra с 05.09.2026; effort `high` с 06.09.2026 по ресёрчу «Effort для плана и кода» (выше high растут токены, не качество); `ultra` = авто-делегирование, не нужен; откат = `gpt-5.6-sol` (в каталоге жив)
 
 # Модель Claude-ветки. Метка `fable` (FABLE_*, FABLE_OUT, EFFORT_FABLE, merge-метка, ключи _runs.jsonl)

@@ -5,6 +5,16 @@
 
 ## [Unreleased]
 
+## [3.1.3] — 2026-09-30 — Claude-ветка и арбитр на xhigh / Claude branch and arbiter at xhigh
+
+### Для человека
+
+- Вторая ветка проверки и арбитр думают глубже (effort xhigh вместо high). Проверка идёт дольше, зато на ревью Opus 5.5 на xhigh находит ошибки, которые high пропускает. Codex остаётся на high.
+
+### Technical
+
+- Changed: `skills/verif/SKILL.md` — `EFFORT_FABLE="xhigh"` (was `high`); applies to Bash B (`--effort {EFFORT_FABLE}`) and the arbiter. Reason: replay in the «Opus 5.5 на моих задачах» research — code review at xhigh found unique, actionable issues (3× time); verif is a single end-of-chain call, so the cost is bounded.
+
 ## [3.1.2] — 2026-09-29 — Claude-ветка на Opus 5.5 / Claude branch on Opus 5.5
 
 ### Для человека
