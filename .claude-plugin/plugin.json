@@ -1,14 +1,14 @@
 {
   "$schema": "https://json.schemastore.org/claude-code-plugin-manifest.json",
   "name": "jadlis-verif",
-  "version": "3.1.4",
+  "version": "3.1.5",
   "displayName": "Jadlis — проверка плана двумя моделями",
   "description": "Codex и Claude (Opus 5.5) порознь рвут план или документ, арбитр сводит находки, батч-интервью, правки. Автономен: нужен Codex CLI (подписка ChatGPT); веб-проверка первоисточников — через плагин jadlis-search, если он установлен.",
   "author": {
     "name": "Be Cyborg"
   },
-  "homepage": "https://github.com/beCyborg/jadlis-verif",
-  "repository": "https://github.com/beCyborg/jadlis-verif",
+  "homepage": "https://gitlab.com/beCyborg/jadlis-verif",
+  "repository": "https://gitlab.com/beCyborg/jadlis-verif",
   "keywords": [
     "jadlis",
     "verification",

@@ -5,6 +5,20 @@
 
 ## [Unreleased]
 
+## [3.1.5] — 2026-10-08 — репозиторий переехал на GitLab / repository moved to GitLab
+
+### Для человека
+
+- Плагин теперь живёт на GitLab: https://gitlab.com/beCyborg/jadlis-verif. Аккаунт GitHub beCyborg заблокирован, поэтому старые ссылки открывают 404.
+- Каталог ставится новой командой: `claude plugin marketplace add https://gitlab.com/beCyborg/jadlis-hub.git`. Если ты уже ставил его со старой ссылки GitHub, удали каталог командой `claude plugin marketplace remove jadlis` и поставь всё заново по README. Плагины этого каталога при удалении тоже снимутся.
+- Работа плагина не изменилась.
+
+### For agents
+
+- Changed: every `github.com/beCyborg/*` link in README pairs, `docs/tier/` README pair (images from the hub's GitLab raw URL; the dead hub `docs/3-research` link now points to the jadlis-research repo) now points to `gitlab.com/beCyborg/*`; `marketplace add` uses the full `https://…/jadlis-hub.git` URL (non-GitHub hosts have no `owner/repo` shorthand).
+- Changed: `.claude-plugin/plugin.json` `homepage`/`repository` → GitLab; version 3.1.4 → 3.1.5.
+- Changed: CI moved from `.github/workflows/ci.yml` (reusable workflow in `beCyborg/jadlis-hub`) to `.gitlab-ci.yml` including `/ci/plugin-ci.yml` from `beCyborg/jadlis-hub` on GitLab — same checks: `claude plugin validate --strict`, gitleaks full history, README parity, privacy grep.
+
 ## [3.1.4] — 2026-09-30 — Фоновые вызовы до 45 минут / Background calls up to 45 min
 
 ### Для человека
