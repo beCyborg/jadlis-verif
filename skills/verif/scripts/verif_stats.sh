@@ -62,6 +62,7 @@ jq -r -s --arg since "$SINCE" --argjson fresh "$FRESH" '
   | ([$runs[] | select(.spot_check.asked == true)]) as $spot
   | ([$spot[] | select(.spot_check.agreed == false)] | length) as $spot_dis
   | (sum_of(.duplicates)) as $dups
+  | ([$runs[] | select(.by_kind != null)]) as $kd
   | ([$runs[] | .raised | select(. != null) | ([.[]] | add)] | add // 0) as $raised_total
 
   | [
@@ -81,6 +82,24 @@ jq -r -s --arg since "$SINCE" --argjson fresh "$FRESH" '
       "Частичное покрытие: \($cov_partial) из \($cov_known) — \(pct($cov_partial; $cov_known))",
       "Арбитра перевернули: \($ovr) из \($judged) рассуженных находок — \(pct($ovr; $judged))",
       "Выборочная проверка: задана \($spot | length) раз, разошлась с авто-решением \($spot_dis)",
+      "",
+      # 3.2.0: свой ответ (custom) по видам находок. Ждём, что «свой текст» уйдёт в решения,
+      # а у фактов его доля упадёт — иначе разделение не работает.
+      (if ($kd | length) == 0 then "Факты и решения: — (нет прогонов 3.2.0)"
+       else "Факты и решения (прогонов 3.2.0: \($kd | length)):\n"
+         + (["fact", "decision"] | map(. as $k
+             | ([$kd[] | .by_kind[$k] // null | select(. != null)]) as $rows
+             | ([$rows[] | .applied] | add // 0) as $a
+             | ([$rows[] | .custom] | add // 0) as $c
+             | ([$rows[] | .skipped] | add // 0) as $sk
+             | "  \(if $k == "fact" then "факты" else "решения" end): \($a + $c + $sk) решено, свой ответ \($c) — \(pct($c; $a + $c + $sk)), оставлено \($sk)")
+           | join("\n"))
+         + "\n  ответы на решения: " + ([$kd[] | .answers // {} | to_entries[]] | group_by(.key)
+             | map("\(.[0].key) ×\([.[] | .value] | add)") | if length == 0 then "—" else join(", ") end)
+       end),
+      (if ($kd | length) == 0 then "Зависимости: —"
+       else "Зависимости: связанных находок \(sum_of(.dependent)), снято после ответа на корень \(sum_of(.superseded)), раундов в среднем "
+         + ((((([$kd[] | .rounds // 1] | add) / ($kd | length)) * 10) | round) / 10 | tostring) end),
       "",
       "Минут интервью на находку: " + (if ($timed | length) == 0 then "— (нет замеров времени)"
         else ((((([$timed[] | .interview_min] | add) / ([$timed[] | .findings] | add)) * 10) | round) / 10 | tostring)

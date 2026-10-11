@@ -202,8 +202,10 @@ ROW=$(jq -n -c \
                          | map({key: .[0], value: length}) | from_entries) end),
       auto_low_confidence: (if $decisions == null then null
                             else ([$decisions[] | select(.auto_low_confidence == true)] | length) end),
+      # Процедурные развилки авто-режима по фактам; решения и пересмотр зависимых (3.2.0) — не развилки.
       forks: (if $decisions == null then null
-              else ([$decisions[] | select((.why_asked // null) != null and .why_asked != "spot-check")] | length) end),
+              else ([$decisions[] | select((.why_asked // null) as $w
+                       | ["critical", "irreversible", "disputed", "consensus-overruled"] | index($w))] | length) end),
       why_asked: (if $decisions == null then null
                   else ([$decisions[] | select((.why_asked // null) != null) | .why_asked]
                         | group_by(.) | map({key: .[0], value: length}) | from_entries) end),
@@ -226,6 +228,26 @@ ROW=$(jq -n -c \
                                 | length) end),
       irreversible: (if $arbiter == null then null
                      else ([$ass[] | select(.reversible == false)] | length) end),
+
+      # 3.2.0: факты и решения, раунды по зависимостям. Арбитр до 3.2.0 этих полей не пишет — null.
+      kinds: (if $arbiter == null or ([$ass[] | select(.kind != null)] | length) == 0 then null
+              else ([$ass[] | .kind // "unknown"] | group_by(.) | map({key: .[0], value: length}) | from_entries) end),
+      dependent: (if $arbiter == null or ([$ass[] | select(has("depends_on"))] | length) == 0 then null
+                  else ([$ass[] | select(((.depends_on // []) | length) > 0)] | length) end),
+      by_kind: (if $decisions == null or ([$decisions[] | select((.kind // null) != null)] | length) == 0 then null
+                else ([$decisions[] | select((.kind // null) != null)] | group_by(.kind)
+                      | map({key: .[0].kind,
+                             value: {applied: ([.[] | select(.decision == "applied")] | length),
+                                     custom: ([.[] | select(.decision == "custom")] | length),
+                                     skipped: ([.[] | select(.decision == "skipped")] | length)}})
+                      | from_entries) end),
+      answers: (if $decisions == null or ([$decisions[] | select((.answer // null) != null)] | length) == 0 then null
+                else ([$decisions[] | .answer | select(. != null)] | group_by(.)
+                      | map({key: .[0], value: length}) | from_entries) end),
+      rounds: (if $decisions == null or ([$decisions[] | select((.round // null) != null)] | length) == 0 then null
+               else ([$decisions[] | .round | select(. != null)] | max) end),
+      superseded: (if $decisions == null or ([$decisions[] | select(has("superseded_by"))] | length) == 0 then null
+                   else ([$decisions[] | select((.superseded_by // null) != null)] | length) end),
 
       machine_min: minutes("prelude"; "machine_done"),
       interview_min: minutes("interview_start"; "interview_done"),

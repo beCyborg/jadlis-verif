@@ -27,7 +27,7 @@ This is my workbench published as it is, not a product: whatever I stopped using
 | **Who looks for the hole.** The plan is re-read by whoever wrote it — and finds typos instead of holes. | It is checked by the same model that wrote the plan. | Codex and Claude (Opus 5.5) read the plan separately and do not see each other's answers. |
 | **Whose frame the reviewer uses.** One head, one angle. | Your own frame, retold back to you: whatever you did not ask about is not there. | The two frames differ — so you also see what you never asked about. |
 | **What to do with a heap of findings.** The list sits in your notes and goes stale. | You get one more long list, and half of the edits you roll back later. | The arbiter merges the findings into one list: what several found weighs more than what one wrote beautifully. |
-| **How a finding becomes an edit.** By hand, if you ever get round to it. | Discussed and forgotten. | A batch interview over every finding: accept, reject or rewrite — and only then the edits. |
+| **How a finding becomes an edit.** By hand, if you ever get round to it. | Discussed and forgotten. | An interview over the findings in rounds: first what the others depend on. Facts are fixed on the arbiter's advice, decisions about goals and scope come to you as a question with a recommended answer — and only then the edits. |
 | **Who checks the edits themselves.** Nobody: made and forgotten. | The same model that made them — and it agrees with itself. | A different model re-reads the edits: is the finding closed, did anything next to it break. |
 | **When the hole opens up.** During execution, when the money and the month are already in. | Same place. | Before. |
 

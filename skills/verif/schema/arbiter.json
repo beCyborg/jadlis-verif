@@ -25,7 +25,9 @@
           "refuted_reason",
           "cross_check",
           "adjusted_severity",
-          "reversible"
+          "reversible",
+          "kind",
+          "depends_on"
         ],
         "properties": {
           "id": {
@@ -83,6 +85,64 @@
               "null"
             ],
             "description": "Is APPLYING this finding's recommendation undoable? false only for an irreversible act: deleting data, sending something outward (message, post, payment), or changing a contract others already rely on. Ordinary text edits are reversible (true). null when you genuinely cannot tell — the interview treats null as reversible."
+          },
+          "kind": {
+            "type": "string",
+            "enum": [
+              "fact",
+              "decision"
+            ],
+            "description": "fact = the finding has one right answer that the target file, the code it cites or a primary source settles (a wrong path, an outdated API, a contradiction inside the document, a step the document's own stated goal requires). decision = the right answer depends on the owner's goals, priorities, scope, deadlines, budget or taste — things no verifier can know; two reasonable owners could answer differently. A refuted finding is a fact."
+          },
+          "depends_on": {
+            "type": "array",
+            "items": {
+              "type": "string"
+            },
+            "description": "Ids of OTHER input findings whose outcome changes this one: if that finding is decided differently, this finding becomes moot or needs a different fix. Empty array when independent — the expected case for most findings. Only ids present in the input; never the finding itself."
+          },
+          "decision_question": {
+            "type": [
+              "object",
+              "null"
+            ],
+            "additionalProperties": false,
+            "description": "Only for kind=decision (null for facts): the question the human answers, in Russian, by the plain-language rules. Phrase `question` so that «да» means `recommended`.",
+            "required": [
+              "question",
+              "recommended",
+              "recommended_detail",
+              "alternative",
+              "alternative_detail"
+            ],
+            "properties": {
+              "question": {
+                "type": "string",
+                "description": "Один вопрос владельцу, ≤ 20 слов, без терминов; «да» = рекомендованный ответ"
+              },
+              "recommended": {
+                "type": "string",
+                "description": "Рекомендованный ответ — ярлык опции, 1–5 слов"
+              },
+              "recommended_detail": {
+                "type": "string",
+                "description": "Что именно поменять в документе при этом ответе — одно предложение; это станет инструкцией для правки"
+              },
+              "alternative": {
+                "type": [
+                  "string",
+                  "null"
+                ],
+                "description": "Самый сильный другой ответ — ярлык 1–5 слов; null, если честной альтернативы нет (кроме «оставить как есть»)"
+              },
+              "alternative_detail": {
+                "type": [
+                  "string",
+                  "null"
+                ],
+                "description": "Что поменять при альтернативе — одно предложение; null вместе с alternative"
+              }
+            }
           },
           "plain": {
             "type": "object",

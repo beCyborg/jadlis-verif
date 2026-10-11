@@ -37,6 +37,25 @@ Work each finding through this sequence:
   `true` costs an unasked one.
 - **When genuinely uncertain, use `discuss`** — that hands the call to the human with your rationale. Contradictory findings across verifiers are prime `discuss` candidates. Do not default everything to `discuss`: commit to `apply`/`skip` when your re-verification supports it.
 
+## Fact or decision — `kind`
+
+The interview treats the two kinds differently: facts are the pipeline's job, decisions are the human's. Sort every finding:
+
+- **`fact`** — one right answer exists, and the target file, the code it cites or a primary source settles it: a wrong path or line, an outdated API or version, a contradiction inside the document, a step the document's OWN stated goal requires but omits, a claim the evidence does not support. A refuted finding is always a `fact`.
+- **`decision`** — the right answer depends on what the owner wants: goals, priorities, scope, deadlines, budget, risk appetite, taste, who the text is for. Two reasonable owners could answer differently, and no amount of reading would settle it. Typical signs: «стоит ли вообще…», «X или Y», «сократить объём», «сдвинуть срок», «выбрать другой подход», a recommendation that trades one value for another.
+
+The test: could a careful assistant with full access to the files and the web answer it alone? Yes → `fact`. No, it needs the owner's preference → `decision`. When a finding mixes both, split the call by its recommendation: if applying the recommendation requires choosing between values, it is a `decision`.
+
+For every `decision` fill `decision_question` (null for facts), by the plain-language rules below:
+- `question` — one question to the owner, ≤ 20 words, phrased so that «да» means your recommended answer.
+- `recommended` / `recommended_detail` — your recommended answer as a 1–5-word option label, and one sentence saying exactly what changes in the document under it. The detail becomes the edit instruction, so make it concrete.
+- `alternative` / `alternative_detail` — the strongest OTHER answer an informed owner might pick, same shape; null when the only honest alternative is «leave the document as it is» (the interview always offers that option itself).
+`recommendation` still applies to decisions: `apply` = you would change the document, `skip` = you would leave it, `discuss` = it is genuinely the owner's call. A decision with `skip` is not asked in auto mode, so use `skip` only when the point is not worth the owner's attention at all.
+
+## Dependencies — `depends_on`
+
+The interview asks findings in rounds: a finding is asked only after every finding it depends on is settled, and a finding whose parent was decided against your recommendation gets re-read before it is asked. List in `depends_on` the ids of OTHER findings whose outcome changes this one — if F1 proposes replacing the approach and F5 fixes a detail of the old approach, F5 depends on F1. Most findings are independent: an empty array is the expected answer. Do not link findings merely because they touch the same section, and never list the finding itself or an id that is not in the input.
+
 ## Tools
 
 `Read`, `Grep`, `Glob` — for the target file and referenced paths. No web access, no file modification: this is a judgment pass over material already gathered. Do not re-run the verifiers' research.
@@ -47,6 +66,7 @@ Emit **only JSON** matching the schema supplied via `--json-schema`. No prose ou
 
 - Exactly **one assessment per input finding id** — every F-id present, no invented ids.
 - `refuted_reason` is non-null iff `refuted` is true.
+- `decision_question` is non-null iff `kind` is `decision`; `depends_on` is always present (often `[]`).
 - `rationale` must be derivable from the finding's own material plus the target file — do not import outside knowledge as fact.
 
 ## Plain-language layer

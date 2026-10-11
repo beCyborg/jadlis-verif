@@ -15,8 +15,9 @@
 │   ├── research.md              (fact-check template — shared)
 │   └── doc.md                   (accuracy-check template — shared)
 ├── references/
-│   ├── interview-apply.md       (спека Фазы A/B — режим интервью авто/вручную, процедурное
-│   │                             правило развилок и выборочная проверка, шаблон вопроса,
+│   ├── interview-apply.md       (спека Фазы A/B — режим интервью авто/вручную, факты и решения,
+│   │                             раунды по зависимостям, процедурное правило развилок и
+│   │                             выборочная проверка, шаблоны вопроса и вопроса-решения,
 │   │                             фиксация решений, применение правок)
 │   ├── delta-recheck.md         (спека Фазы C — снимки, дифф, вызов Codex, круг доправок,
 │   │                             условия пропуска, строка сводки)
@@ -28,7 +29,8 @@
 │   │                             для claude -p prelude делает производную без minLength/minimum/
 │   │                             maximum и корневых $schema/$id/title/description)
 │   ├── arbiter.json             (схема оценок арбитра — сразу Claude-совместимая; v6.1: + объект
-│   │                             `plain` на каждую оценку; 3.1.0: + `reversible`)
+│   │                             `plain` на каждую оценку; 3.1.0: + `reversible`; 3.2.0: + `kind`,
+│   │                             `depends_on`, `decision_question`)
 │   └── delta.json               (схема ответа Фазы C — совместима и с codex, и с claude:
 │                                 запрещённых ключей нет, производную делать не нужно)
 └── scripts/
@@ -39,8 +41,10 @@
     ├── render_merged.sh         (динамический pretty-print по consensus.providers;
     │                             строка ПОКРЫТИЕ, пометки ⚠ НЕ УЧАСТВОВАЛ / ⚠ СБОЙ)
     ├── log_run.sh               (детерминированная строка журнала → AI/verif/_runs.jsonl)
+    ├── rounds.sh                (раунды интервью по `depends_on` арбитра; циклы разрывает)
     └── verif_stats.sh           (сводка по журналу: точность веток, доля partial,
-                                  перевороты арбитра, минуты интервью, регрессии правок)
+                                  перевороты арбитра, минуты интервью, регрессии правок,
+                                  свой ответ по фактам и решениям, зависимости)
 
 <repo-root>/tools/
 └── backfill_runs.sh             (РАЗОВЫЙ, не рантайм: собрать журнал из уже лежащих
@@ -67,7 +71,8 @@
 | Policy арбитра | `system-prompts/arbiter.md` |
 | Шаблоны запроса | `prompts/*.md` |
 | Схема вердикта | `schema/verdict.json` — ломает обе ветки при изменении; менять только с bump версии, помнить про производную Claude-схему в prelude |
-| Язык и формат вопросов интервью, режимы авто/вручную | `references/plain-language.md` (правила) + `references/interview-apply.md` (развилка A3.0, шаблон вопроса A3.1, авто-режим A3.2) |
+| Язык и формат вопросов интервью, режимы авто/вручную | `references/plain-language.md` (правила) + `references/interview-apply.md` (развилка A3.0, факты и решения A3.0a, раунды A3.0b, шаблон вопроса A3.1, вопрос-решение A3.1a, авто-режим A3.2) |
+| Деление на факты и решения, зависимости | `schema/arbiter.json` (`kind`, `depends_on`, `decision_question`) + секции «Fact or decision» и «Dependencies» в `system-prompts/arbiter.md` + `scripts/rounds.sh` |
 | Поля `plain.*` арбитра | `schema/arbiter.json` + секция «Plain-language layer» в `system-prompts/arbiter.md` |
 | Правило необратимости правки | `schema/arbiter.json` (`reversible`) + «Rules of evidence» в `system-prompts/arbiter.md` + таблица оснований в `interview-apply.md` A3.2 |
 | Правило перепроверки правок, потолок кругов | `references/delta-recheck.md` + `system-prompts/delta-check.md` + `schema/delta.json` |

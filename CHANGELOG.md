@@ -5,6 +5,26 @@
 
 ## [Unreleased]
 
+## [3.2.0] — 2026-10-11 — Факты и решения, раунды по зависимостям / Facts vs decisions, dependency rounds
+
+### Для человека
+
+- Арбитр делит находки на два вида. Факт — у находки один правильный ответ, его даёт файл или источник. Решение — ответ зависит от твоих целей, сроков, объёма или вкуса.
+- В авто-режиме факты правятся сами, как раньше. Решения задаются все: вопросом, рекомендованным ответом и самой сильной альтернативой, а не выбором «исправить / оставить».
+- Вопросы идут раундами. Сначала находки, от которых зависят другие, потом зависимые. Если ты решил корневую находку иначе, чем советовал арбитр, зависимая находка перечитывается: она снимается как ненужная или задаётся заново.
+- Зачем: в журнале 68 из 957 решений (7 %) ты отвечал своим текстом, и почти всегда это было решение о цели или рамках. Идея — из скилла /grilling Matt Pocock (mattpocock/skills): факты ищет агент, решения принимает человек; вопросы — по дереву решений.
+- Журнал считает свой ответ отдельно для фактов и решений: так видно, помогло ли разделение.
+
+### For agents
+
+- Added: `schema/arbiter.json` — required `kind` (`fact`|`decision`) and `depends_on` (array of ids) per assessment; optional `decision_question` {`question`, `recommended`, `recommended_detail`, `alternative`, `alternative_detail`} for decisions. No forbidden keys; Claude structured output unchanged.
+- Added: `system-prompts/arbiter.md` — sections «Fact or decision — `kind`» and «Dependencies — `depends_on`»; output-contract line for both.
+- Added: `scripts/rounds.sh` — deterministic interview rounds from `depends_on` (Kahn layers; edges to unknown ids/self dropped; a cycle is broken by dropping back-edges, members flagged `cycle: true`; no arbiter → one round).
+- Changed: `references/interview-apply.md` — A3.0 fork text with decision count; new A3.0a (facts vs decisions), A3.0b (rounds, dependent re-check with `superseded_by`), A3.1a (decision question template, answer → decision mapping); A3.2 auto mode asks every decision with `apply`/`discuss` outside the 4-question fact cap, auto-skips decisions with `skip`; A4 adds `kind`, `answer`, `round`, `superseded_by`, `why_asked` += `decision`, `dependency`; Phase B passes findings in round order and uses `recommended_detail` for accepted decisions.
+- Changed: `scripts/log_run.sh` — new fields `kinds`, `dependent`, `by_kind`, `answers`, `rounds`, `superseded` (null for pre-3.2.0 runs); `forks` now counts only the four procedural fork reasons (unchanged on old runs: verified on 2026-10-08 row).
+- Changed: `scripts/verif_stats.sh` — «Факты и решения» (custom-answer share per kind, decision answers) and «Зависимости» lines.
+- Changed: `references/plain-language.md` (`decision_question` field table), `SKILL.md` (v9 line, `ROUNDS` in prelude, arbiter and Phase A summaries), `STRUCTURE.md`, README pair.
+
 ## [3.1.5] — 2026-10-08 — репозиторий переехал на GitLab / repository moved to GitLab
 
 ### Для человека
