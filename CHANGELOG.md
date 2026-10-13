@@ -5,6 +5,26 @@
 
 ## [Unreleased]
 
+## [3.3.0] — 2026-10-13 — Фильтр гипотетических угроз / Hypothetical-threat filter
+
+### Для человека
+
+- Арбитр помечает находку как гипотетическую, если она защищает от угрозы без признаков в плане, коде или источнике, а исправление добавляет проверки, валидацию или запасные пути.
+- Такие находки по умолчанию отклоняются. В авто-режиме они не задаются, в ручном первой идёт «Оставить». Перед правками стоит одна строка «Отклонил как гипотетическое: N — …»: любую находку можно вернуть по номеру.
+- Исключения: критичная и необратимая находка всё равно задаётся. Находку, которую подняли оба проверяющих, тоже спрашиваем.
+- Зачем: состязательное ревью тянет к лишней защите. Идея — из статьи Anthropic про Scion (anthropic.com/engineering/redesigning-source-control): ревью-агенты склонны к «излишнему недоверию к другому внутреннему сервису». Раньше остаток «спорно» уровней medium/low в авто-режиме применялся, теперь гипотетические из него исключены.
+- Журнал считает, сколько находок помечено и сколько ты вернул. Если возвратов много, фильтр режет лишнее.
+
+### For agents
+
+- Added: `schema/arbiter.json` — required boolean `hypothetical` per assessment. No forbidden keys; Claude structured output unchanged.
+- Added: `system-prompts/arbiter.md` — section «Hypothetical risk — `hypothetical`» (test, examples, `true` → `skip` unless `critical` + `reversible: false` → `discuss`; speculation + hypothetical → `skip`; independent of `kind`); output-contract line.
+- Changed: `SKILL.md` Arb-3 — normalization `.assessments |= map(.hypothetical //= false)` for pre-3.3.0 or partial answers; v10 line and arbiter summary.
+- Changed: `references/interview-apply.md` — new A3.0c (default reject, one summary line, bring back by id → `applied`, `decided_by: "user"`); A3.0a skips hypothetical decisions in auto mode; A3.1 / A3.1a put «Оставить» first as Recommended; A3.2 step 1 and step 7 exclude hypothetical from auto-apply; summary line in the step 5 list; A4 adds `hypothetical`; Phase B summary counts rejected / returned. `consensus-overruled` fork unchanged.
+- Changed: `scripts/log_run.sh` — field `hypothetical: {raised, accepted}` (null before 3.3.0); spot-check `agreed` treats hypothetical as an auto-skip.
+- Changed: `scripts/verif_stats.sh` — line «Гипотетические: отмечено N, ты вернул M (X %)».
+- Changed: `references/plain-language.md`, `STRUCTURE.md`, `TESTS.md`, README pair.
+
 ## [3.2.0] — 2026-10-11 — Факты и решения, раунды по зависимостям / Facts vs decisions, dependency rounds
 
 ### Для человека

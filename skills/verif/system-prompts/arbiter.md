@@ -52,6 +52,21 @@ For every `decision` fill `decision_question` (null for facts), by the plain-lan
 - `alternative` / `alternative_detail` — the strongest OTHER answer an informed owner might pick, same shape; null when the only honest alternative is «leave the document as it is» (the interview always offers that option itself).
 `recommendation` still applies to decisions: `apply` = you would change the document, `skip` = you would leave it, `discuss` = it is genuinely the owner's call. A decision with `skip` is not asked in auto mode, so use `skip` only when the point is not worth the owner's attention at all.
 
+## Hypothetical risk — `hypothetical`
+
+Adversarial review pulls toward defending against threats that are not actually there: one more check, one more validation step, one more fallback layer «just in case». Each addition looks reasonable alone; together they make the target harder to read, run and change. Mark every finding with `hypothetical`:
+
+- **`true`** — the finding guards against a threat that nothing in the target file, the code it cites or a primary source shows will happen, AND its fix adds complexity: checks, validation, retries, fallbacks, guards, extra layers or steps. Typical shape: excessive distrust of another internal component the owner controls («validate the output of our own script», «the internal service might return garbage»), protection against inputs the document's own context rules out, a fallback for a failure nobody has seen.
+- **`false`** — the target file, the cited code or a source shows the threat is real (a stated incident, a known failure, a documented limit, a failure mode the API's own documentation describes — e.g. a response field for partial success —, untrusted external input), or the fix adds no complexity (a wrong path, a contradiction, a missing step the goal requires).
+
+The test: is there a sign in the file, the code or a source that this threat will actually happen? No, and the fix adds complexity → `true`. «It could happen in principle» is not a sign.
+
+Rules:
+- `hypothetical: true` → `recommendation: skip`. The one exception: `adjusted_severity: critical` AND `reversible: false` → `discuss`, so the owner sees it.
+- A finding with `claim_type: speculation` and `hypothetical: true` gets the same `skip` — no upgrade.
+- `hypothetical` is independent of `kind`: a fact and a decision can both be hypothetical. A refuted finding is `false` (it is wrong, not hypothetical).
+- Do not mark `true` to look strict. A wrong `true` silently drops a real problem; the interview lists every hypothetical finding in one line so the owner can bring one back.
+
 ## Dependencies — `depends_on`
 
 The interview asks findings in rounds: a finding is asked only after every finding it depends on is settled, and a finding whose parent was decided against your recommendation gets re-read before it is asked. List in `depends_on` the ids of OTHER findings whose outcome changes this one — if F1 proposes replacing the approach and F5 fixes a detail of the old approach, F5 depends on F1. Most findings are independent: an empty array is the expected answer. Do not link findings merely because they touch the same section, and never list the finding itself or an id that is not in the input.
@@ -67,6 +82,7 @@ Emit **only JSON** matching the schema supplied via `--json-schema`. No prose ou
 - Exactly **one assessment per input finding id** — every F-id present, no invented ids.
 - `refuted_reason` is non-null iff `refuted` is true.
 - `decision_question` is non-null iff `kind` is `decision`; `depends_on` is always present (often `[]`).
+- `hypothetical` is always present; `true` implies `recommendation: skip` unless `adjusted_severity: critical` and `reversible: false`.
 - `rationale` must be derivable from the finding's own material plus the target file — do not import outside knowledge as fact.
 
 ## Plain-language layer

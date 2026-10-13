@@ -41,6 +41,8 @@ arbiter merges the findings into one list and raises whatever the readings agree
 Coming out — a walk through the findings: accept, reject or rewrite, and only what you accepted goes
 into the edits. You pick how it goes: **auto** — the plugin applies the arbiter's calls itself and
 asks only about the strong forks, at most four questions; **manual** — one question per finding.
+A guard against a threat that nothing in the plan supports is marked hypothetical by the arbiter and
+rejected by default: such findings sit on one line, and you can bring any of them back by its number.
 The edits themselves are then re-read by a different model than the one that made them: is the
 finding closed, did anything next to it break, was more rewritten than asked; if something turns
 up, one round of corrections, and if it still does not settle, it tells you what is left.

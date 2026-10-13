@@ -27,6 +27,7 @@
           "adjusted_severity",
           "reversible",
           "kind",
+          "hypothetical",
           "depends_on"
         ],
         "properties": {
@@ -93,6 +94,10 @@
               "decision"
             ],
             "description": "fact = the finding has one right answer that the target file, the code it cites or a primary source settles (a wrong path, an outdated API, a contradiction inside the document, a step the document's own stated goal requires). decision = the right answer depends on the owner's goals, priorities, scope, deadlines, budget or taste — things no verifier can know; two reasonable owners could answer differently. A refuted finding is a fact."
+          },
+          "hypothetical": {
+            "type": "boolean",
+            "description": "true when the finding guards against a threat that nothing in the target file, the code it cites or a primary source shows will happen, AND the fix adds checks, validation, fallbacks or layers. A hypothetical finding gets recommendation skip (only critical + irreversible may stay discuss). Independent of kind: a fact and a decision can both be hypothetical."
           },
           "depends_on": {
             "type": "array",

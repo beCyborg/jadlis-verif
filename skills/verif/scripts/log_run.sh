@@ -212,9 +212,10 @@ ROW=$(jq -n -c \
       spot_check: (if $decisions == null then null
                    elif $spot == null then {asked: false, agreed: null}
                    else {asked: true,
-                         # Auto-decision per A3.2: refuted or skip -> skipped; apply and leftover discuss -> applied.
+                         # Auto-decision per A3.2: refuted, hypothetical or skip -> skipped; apply and leftover discuss -> applied.
                          agreed: (if ($spot.arbiter_recommendation // null) == null then null
-                                  elif ($spot.refuted // false) or $spot.arbiter_recommendation == "skip"
+                                  elif ($spot.refuted // false) or ($spot.hypothetical // false)
+                                       or $spot.arbiter_recommendation == "skip"
                                     then ($spot.decision == "skipped")
                                   else ($spot.decision != "skipped") end)} end),
 
@@ -248,6 +249,13 @@ ROW=$(jq -n -c \
                else ([$decisions[] | .round | select(. != null)] | max) end),
       superseded: (if $decisions == null or ([$decisions[] | select(has("superseded_by"))] | length) == 0 then null
                    else ([$decisions[] | select((.superseded_by // null) != null)] | length) end),
+
+      # 3.3.0: гипотетические угрозы. raised — сколько пометил арбитр, accepted — сколько из них владелец
+      # всё же принял (applied/custom). Арбитр до 3.3.0 поля не пишет — null.
+      hypothetical: (if $arbiter == null or ([$ass[] | select(has("hypothetical"))] | length) == 0 then null
+                     else {raised: ([$ass[] | select(.hypothetical == true)] | length),
+                           accepted: (if $decisions == null then null
+                                      else ([$acc[] | select(.hypothetical == true)] | length) end)} end),
 
       machine_min: minutes("prelude"; "machine_done"),
       interview_min: minutes("interview_start"; "interview_done"),

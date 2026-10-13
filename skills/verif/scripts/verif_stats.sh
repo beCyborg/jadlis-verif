@@ -63,6 +63,7 @@ jq -r -s --arg since "$SINCE" --argjson fresh "$FRESH" '
   | ([$spot[] | select(.spot_check.agreed == false)] | length) as $spot_dis
   | (sum_of(.duplicates)) as $dups
   | ([$runs[] | select(.by_kind != null)]) as $kd
+  | ([$runs[] | select(.hypothetical != null)]) as $hyp
   | ([$runs[] | .raised | select(. != null) | ([.[]] | add)] | add // 0) as $raised_total
 
   | [
@@ -100,6 +101,11 @@ jq -r -s --arg since "$SINCE" --argjson fresh "$FRESH" '
       (if ($kd | length) == 0 then "Зависимости: —"
        else "Зависимости: связанных находок \(sum_of(.dependent)), снято после ответа на корень \(sum_of(.superseded)), раундов в среднем "
          + ((((([$kd[] | .rounds // 1] | add) / ($kd | length)) * 10) | round) / 10 | tostring) end),
+      # 3.3.0: высокая доля возвратов значит, что фильтр гипотетических угроз режет настоящие проблемы.
+      (if ($hyp | length) == 0 then "Гипотетические: — (нет прогонов 3.3.0)"
+       else ([$hyp[] | .hypothetical.raised // 0] | add) as $hr
+         | ([$hyp[] | .hypothetical.accepted // 0] | add) as $ha
+         | "Гипотетические: отмечено \($hr), ты вернул \($ha) — \(pct($ha; $hr))   (прогонов 3.3.0: \($hyp | length))" end),
       "",
       "Минут интервью на находку: " + (if ($timed | length) == 0 then "— (нет замеров времени)"
         else ((((([$timed[] | .interview_min] | add) / ([$timed[] | .findings] | add)) * 10) | round) / 10 | tostring)

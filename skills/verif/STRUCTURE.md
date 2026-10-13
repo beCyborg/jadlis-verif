@@ -30,7 +30,7 @@
 │   │                             maximum и корневых $schema/$id/title/description)
 │   ├── arbiter.json             (схема оценок арбитра — сразу Claude-совместимая; v6.1: + объект
 │   │                             `plain` на каждую оценку; 3.1.0: + `reversible`; 3.2.0: + `kind`,
-│   │                             `depends_on`, `decision_question`)
+│   │                             `depends_on`, `decision_question`; 3.3.0: + `hypothetical`)
 │   └── delta.json               (схема ответа Фазы C — совместима и с codex, и с claude:
 │                                 запрещённых ключей нет, производную делать не нужно)
 └── scripts/
@@ -73,6 +73,7 @@
 | Схема вердикта | `schema/verdict.json` — ломает обе ветки при изменении; менять только с bump версии, помнить про производную Claude-схему в prelude |
 | Язык и формат вопросов интервью, режимы авто/вручную | `references/plain-language.md` (правила) + `references/interview-apply.md` (развилка A3.0, факты и решения A3.0a, раунды A3.0b, шаблон вопроса A3.1, вопрос-решение A3.1a, авто-режим A3.2) |
 | Деление на факты и решения, зависимости | `schema/arbiter.json` (`kind`, `depends_on`, `decision_question`) + секции «Fact or decision» и «Dependencies» в `system-prompts/arbiter.md` + `scripts/rounds.sh` |
+| Фильтр гипотетических угроз | `schema/arbiter.json` (`hypothetical`) + секция «Hypothetical risk» в `system-prompts/arbiter.md` + `interview-apply.md` A3.0c + `.hypothetical //= false` в Arb-3 (`SKILL.md`) + поле `hypothetical` в `scripts/log_run.sh` / `scripts/verif_stats.sh` |
 | Поля `plain.*` арбитра | `schema/arbiter.json` + секция «Plain-language layer» в `system-prompts/arbiter.md` |
 | Правило необратимости правки | `schema/arbiter.json` (`reversible`) + «Rules of evidence» в `system-prompts/arbiter.md` + таблица оснований в `interview-apply.md` A3.2 |
 | Правило перепроверки правок, потолок кругов | `references/delta-recheck.md` + `system-prompts/delta-check.md` + `schema/delta.json` |
