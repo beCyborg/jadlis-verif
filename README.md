@@ -6,7 +6,7 @@
 в один список — до того, как ты в план вложился.
 
 ```
-claude plugin marketplace add https://gitlab.com/beCyborg/jadlis-hub.git
+claude plugin marketplace add https://github.com/beCyborg/jadlis-hub.git
 claude plugin install jadlis-verif@jadlis
 ```
 
@@ -108,7 +108,7 @@ claude plugin install jadlis-verif@jadlis
 Скажи мне «есть» или «нет» по каждому — токены и содержимое конфигов не печатай.
 Нет Codex CLI — остановись и скажи мне: без него это не работает.
 Дальше выполни ровно эти команды, дословно, ничего не сокращая:
-1. claude plugin marketplace add https://gitlab.com/beCyborg/jadlis-hub.git
+1. claude plugin marketplace add https://github.com/beCyborg/jadlis-hub.git
 2. claude plugin install jadlis-verif@jadlis
 3. claude plugin list — покажи мне строку про jadlis-verif и его версию.
 Ключи API у меня не спрашивай: этому плагину они не нужны, и в конфиги ключей ничего не пиши.
@@ -119,7 +119,7 @@ claude plugin install jadlis-verif@jadlis
 **б) Команды руками.**
 
 ```
-claude plugin marketplace add https://gitlab.com/beCyborg/jadlis-hub.git
+claude plugin marketplace add https://github.com/beCyborg/jadlis-hub.git
 claude plugin install jadlis-verif@jadlis
 claude plugin list
 ```

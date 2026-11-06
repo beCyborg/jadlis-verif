@@ -21,7 +21,7 @@ Six steps of the mechanism:
 
 ## What it looks like
 
-![A business-plan canvas on three legs, robotic arms pulling the legs out](https://gitlab.com/beCyborg/jadlis-hub/-/raw/main/docs/img/01-verif-01.webp)
+![A business-plan canvas on three legs, robotic arms pulling the legs out](https://raw.githubusercontent.com/beCyborg/jadlis-hub/main/docs/img/01-verif-01.webp)
 
 One run, end to end (tag `jadlis-verif--v3.1.0`):
 
@@ -63,7 +63,7 @@ Paste the block below into Claude Code — it does the work.
 
 ```text
 You are an installer. Do exactly these steps and nothing beyond them:
-1. Bash: claude plugin marketplace add https://gitlab.com/beCyborg/jadlis-hub.git
+1. Bash: claude plugin marketplace add https://github.com/beCyborg/jadlis-hub.git
 2. Bash: claude plugin install jadlis-search@jadlis --config BRAVE_API_KEY=<my Brave key> --config FIRECRAWL_API_KEY=<my Firecrawl key>
 3. Bash: claude plugin install jadlis-verif@jadlis
 4. Tell me: "Both plugins are in, the keys went into the macOS Keychain. Restart Claude Code
@@ -73,7 +73,7 @@ You are an installer. Do exactly these steps and nothing beyond them:
 The same path by hand, same commands:
 
 1. **Get the two required keys.** Brave — https://api-dashboard.search.brave.com, the **Search** plan is the one you need. Firecrawl — https://firecrawl.dev/app/api-keys, a key shaped like `fc-…`.
-2. **Add the marketplace and install `jadlis-search`.** `claude plugin marketplace add https://gitlab.com/beCyborg/jadlis-hub.git`, then `claude plugin install jadlis-search@jadlis --config BRAVE_API_KEY=… --config FIRECRAWL_API_KEY=…`. The keys go into the Keychain, never into files; to change them later — `/plugin configure jadlis-search@jadlis`.
+2. **Add the marketplace and install `jadlis-search`.** `claude plugin marketplace add https://github.com/beCyborg/jadlis-hub.git`, then `claude plugin install jadlis-search@jadlis --config BRAVE_API_KEY=… --config FIRECRAWL_API_KEY=…`. The keys go into the Keychain, never into files; to change them later — `/plugin configure jadlis-search@jadlis`.
 3. **Install `jadlis-verif`:** `claude plugin install jadlis-verif@jadlis`.
 4. **Restart Claude Code fully.** `jadlis-search` ships MCP servers, and those start with the session; `/reload-plugins` does not apply to such plugins.
 5. **Run `/jadlis-search:keys`.** The skill shows what is already there and takes the rest. If you only want `jadlis-verif`, skip the science keys — they belong to tier 3.
@@ -162,4 +162,4 @@ Nothing found — the script fails quietly and the channel or layer degrades. It
 
 Why not otherwise: `settings.json` is plain text with mode 644 and ends up in backups; the desktop Claude Code does not read a shell profile (`~/.zshenv`) for MCP servers; subscription password managers are not available to everyone. The Keychain is there for everyone and shared across tools.
 
-Next — [tier 3: research](https://gitlab.com/beCyborg/jadlis-research).
+Next — [tier 3: research](https://github.com/beCyborg/jadlis-research).

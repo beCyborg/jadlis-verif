@@ -6,7 +6,7 @@ Two models from two different vendors tear into it separately, neither of them s
 answer, and an arbiter merges the findings into one list — before you have put anything into the plan.
 
 ```
-claude plugin marketplace add https://gitlab.com/beCyborg/jadlis-hub.git
+claude plugin marketplace add https://github.com/beCyborg/jadlis-hub.git
 claude plugin install jadlis-verif@jadlis
 ```
 
@@ -111,7 +111,7 @@ on the machine. Tell me "present" or "absent" for each — never print tokens or
 contents of config files.
 If Codex CLI is missing — stop and tell me: it does not work without it.
 Then run exactly these commands, verbatim, shortening nothing:
-1. claude plugin marketplace add https://gitlab.com/beCyborg/jadlis-hub.git
+1. claude plugin marketplace add https://github.com/beCyborg/jadlis-hub.git
 2. claude plugin install jadlis-verif@jadlis
 3. claude plugin list — show me the line about jadlis-verif and its version.
 Do not ask me for API keys: this plugin does not need them, and write no keys into any config.
@@ -122,7 +122,7 @@ If a command returns an error, stop, show me the output, and do not move to the 
 **b) Commands by hand.**
 
 ```
-claude plugin marketplace add https://gitlab.com/beCyborg/jadlis-hub.git
+claude plugin marketplace add https://github.com/beCyborg/jadlis-hub.git
 claude plugin install jadlis-verif@jadlis
 claude plugin list
 ```

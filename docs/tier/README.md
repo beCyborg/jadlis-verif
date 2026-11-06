@@ -21,7 +21,7 @@
 
 ## Как выглядит
 
-![Канвас плана на трёх опорах, механические руки выдёргивают опоры](https://gitlab.com/beCyborg/jadlis-hub/-/raw/main/docs/img/01-verif-01.webp)
+![Канвас плана на трёх опорах, механические руки выдёргивают опоры](https://raw.githubusercontent.com/beCyborg/jadlis-hub/main/docs/img/01-verif-01.webp)
 
 Конвейер одного прогона (тег `jadlis-verif--v3.1.0`):
 
@@ -63,7 +63,7 @@ FINDINGS (9):
 
 ```text
 Ты — установщик. Выполни ровно эти шаги и ничего сверх них:
-1. Bash: claude plugin marketplace add https://gitlab.com/beCyborg/jadlis-hub.git
+1. Bash: claude plugin marketplace add https://github.com/beCyborg/jadlis-hub.git
 2. Bash: claude plugin install jadlis-search@jadlis --config BRAVE_API_KEY=<мой ключ Brave> --config FIRECRAWL_API_KEY=<мой ключ Firecrawl>
 3. Bash: claude plugin install jadlis-verif@jadlis
 4. Скажи мне: «Плагины стоят, ключи уехали в Связку ключей. Полностью перезапусти
@@ -73,7 +73,7 @@ FINDINGS (9):
 Тот же путь руками, теми же командами:
 
 1. **Заведи два обязательных ключа.** Brave — https://api-dashboard.search.brave.com, нужен тариф **Search**. Firecrawl — https://firecrawl.dev/app/api-keys, ключ вида `fc-…`.
-2. **Подключи маркетплейс и поставь `jadlis-search`.** `claude plugin marketplace add https://gitlab.com/beCyborg/jadlis-hub.git`, затем `claude plugin install jadlis-search@jadlis --config BRAVE_API_KEY=… --config FIRECRAWL_API_KEY=…`. Ключи уезжают в Связку ключей, в файлы не попадают; поменять потом — `/plugin configure jadlis-search@jadlis`.
+2. **Подключи маркетплейс и поставь `jadlis-search`.** `claude plugin marketplace add https://github.com/beCyborg/jadlis-hub.git`, затем `claude plugin install jadlis-search@jadlis --config BRAVE_API_KEY=… --config FIRECRAWL_API_KEY=…`. Ключи уезжают в Связку ключей, в файлы не попадают; поменять потом — `/plugin configure jadlis-search@jadlis`.
 3. **Поставь `jadlis-verif`:** `claude plugin install jadlis-verif@jadlis`.
 4. **Перезапусти Claude Code полностью.** `jadlis-search` тянет MCP-серверы, они поднимаются на старте сессии; `/reload-plugins` для таких плагинов не применяется.
 5. **Вызови `/jadlis-search:keys`.** Скилл покажет, что уже есть, и примет остальное. Нужен только `jadlis-verif` — научные ключи пропусти, вернёшься к ним перед тиром 3.
@@ -162,4 +162,4 @@ FINDINGS (9):
 
 Почему не иначе: `settings.json` лежит открытым текстом с правами 644 и попадает в бэкапы; shell-профиль (`~/.zshenv`) десктопный Claude Code для MCP-серверов не читает; менеджеры паролей с подпиской есть не у всех. Связка ключей есть у всех и одна на все инструменты.
 
-Дальше — [тир 3: ресерч](https://gitlab.com/beCyborg/jadlis-research).
+Дальше — [тир 3: ресерч](https://github.com/beCyborg/jadlis-research).
