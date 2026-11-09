@@ -5,6 +5,17 @@
 
 ## [Unreleased]
 
+## [3.4.0] — 2026-11-09 — ветка Claude и арбитр из личного файла / Claude branch and arbiter from a personal file
+
+### Для человека
+- Ветку Claude и арбитра можно перевести на другую модель личным файлом `~/.claude/skills/_shared/final-agent.json` (например, Fable 5.2 · high). Запасная модель тогда — Opus 5.5 · xhigh. Нет файла — всё как раньше: Opus 5.5 · xhigh, запасная Opus 5.
+- Пролог печатает строку `FINAL_AGENT=`: откуда взята модель и какая запасная.
+
+### For agents
+- Added: `skills/verif/scripts/final-agent.py`; prelude reads it: valid file → `FABLE_MODEL_PRIMARY` and `EFFORT_FABLE` from the file, `FABLE_MODEL_FALLBACK=claude-opus-5-5`, `EFFORT_FABLE_FALLBACK=xhigh`; otherwise unchanged.
+- Changed: «Ошибки и fallbacks» — the chain with the file, effort on the fallback, one line to the user.
+- Docs: `TESTS.md` prelude row refreshed (stale `claude-fable-5-1`), new row for the dry check of the prelude.
+
 ## [3.3.0] — 2026-10-13 — Фильтр гипотетических угроз / Hypothetical-threat filter
 
 ### Для человека

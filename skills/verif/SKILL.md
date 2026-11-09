@@ -97,7 +97,7 @@ fi
 
 # Hardcoded settings
 EFFORT_CODEX="high"
-EFFORT_FABLE="xhigh"   # 3.1.3 (30.09.2026): Claude-ветка и арбитр — финальные агенты цепочки, xhigh по ресёрчу «Opus 5.5 на моих задачах» (ревью на xhigh находит больше, 3× время)
+EFFORT_FABLE="xhigh"   # 3.1.3 (30.09.2026): Claude-ветка и арбитр — финальные агенты цепочки, xhigh по ресёрчу «Opus 5.5 на моих задачах» (ревью на xhigh находит больше, 3× время); личный final-agent.json ниже его заменяет
 CODEX_MODEL="gpt-6-astra"   # GPT-6 Astra с 05.09.2026; effort `high` с 06.09.2026 по ресёрчу «Effort для плана и кода» (выше high растут токены, не качество); `ultra` = авто-делегирование, не нужен; откат = `gpt-5.6-sol` (в каталоге жив)
 
 # Модель Claude-ветки. Метка `fable` (FABLE_*, FABLE_OUT, EFFORT_FABLE, merge-метка, ключи _runs.jsonl)
@@ -105,6 +105,20 @@ CODEX_MODEL="gpt-6-astra"   # GPT-6 Astra с 05.09.2026; effort `high` с 06.09.
 # Opus 5.5 — 1M-контекст нативно. Запасная — Opus 5 (прошлое поколение, классификаторы уже): отказ / переполнение контекста.
 FABLE_MODEL_PRIMARY="claude-opus-5-5"
 FABLE_MODEL_FALLBACK="claude-opus-5"
+EFFORT_FABLE_FALLBACK="xhigh"
+# 3.4.0 (09.11.2026): личный файл ~/.claude/skills/_shared/final-agent.json = {"model":"claude-…","effort":"…"}
+# (необязательный, в плагин не входит) меняет модель и effort Claude-ветки и арбитра. Цепочка тогда:
+# модель файла → claude-opus-5-5 (effort xhigh). Нет файла / битый JSON / чужая модель или effort → всё как выше.
+FINAL_AGENT_JSON=$(python3 "$VERIFIER_ROOT/scripts/final-agent.py")
+FINAL_MODEL=$(jq -r '.finalOpts.model // empty' <<<"$FINAL_AGENT_JSON")
+if [[ -n "$FINAL_MODEL" ]]; then
+  FABLE_MODEL_PRIMARY="$FINAL_MODEL"
+  EFFORT_FABLE=$(jq -r '.finalOpts.effort' <<<"$FINAL_AGENT_JSON")
+  FABLE_MODEL_FALLBACK="claude-opus-5-5"
+  FINAL_AGENT_SOURCE="final-agent.json"
+else
+  FINAL_AGENT_SOURCE="default ($(jq -r '.reason' <<<"$FINAL_AGENT_JSON"))"
+fi
 FABLE_MODEL="$FABLE_MODEL_PRIMARY"
 
 # Claude-совместимая производная схема: structured outputs Anthropic не поддерживает
@@ -173,6 +187,7 @@ echo "  FABLE_MODEL=$FABLE_MODEL"
 echo "  CODEX_MODEL=$CODEX_MODEL"
 # Одной строкой — пин моделей и effort: видно в логе прогона, проверяется тестом TESTS.md
 echo "  MODELS=$FABLE_MODEL / $CODEX_MODEL / $EFFORT_FABLE / $EFFORT_CODEX"
+echo "  FINAL_AGENT=$FINAL_AGENT_SOURCE; fallback $FABLE_MODEL_FALLBACK · $EFFORT_FABLE_FALLBACK"
 echo "  SCHEMA_PATH=$SCHEMA_PATH"
 echo "  ARBITER_SCHEMA_PATH=$ARBITER_SCHEMA_PATH"
 echo "  DELTA_SCHEMA_PATH=$DELTA_SCHEMA_PATH"
@@ -441,8 +456,8 @@ bash "$LOG_RUN" \
 ## Ошибки и fallbacks
 
 - **Background Bash exit != 0** — notification содержит exit code. Прочитать output файл для диагностики. `merge_verdicts.sh` увидит невалидный JSON → `unreliable` stub. Покажи пользователю tail stderr + диагностику CLI: `codex login status` (auth) и `codex exec -m gpt-6-astra "ping" < /dev/null` (живость модели).
-- **Claude-ветка (метка `fable`): цепочка моделей** `claude-opus-5-5` → `claude-opus-5`. Переключение вниз: (а) unknown model / модель отвергнута; (б) context-overflow post-run (ошибка про превышение контекста в output) → перезапуск Bash B на следующей модели цепочки. Арбитр наследует резолвнутую `FABLE_MODEL`.
-- **Claude-ветка (`fable`) exit != 0 или bad JSON** — `$FABLE_OUT` либо plain-text ошибка, либо headless-envelope без извлекаемого вердикта (в т.ч. `stop_reason: refusal` на security-фокусных прогонах — ожидаемый режим отказа Claude-моделей, при нём перезапуск на claude-opus-5). Если каскад Шага 6 ничего не извлёк — stub unreliable. Покажи `cat "$FABLE_OUT"` для диагностики.
+- **Claude-ветка (метка `fable`): цепочка моделей** `claude-opus-5-5` → `claude-opus-5`; с личным `final-agent.json` (3.4.0) — модель файла → `claude-opus-5-5`, строка `FINAL_AGENT=` пролога называет цепочку. При переходе на запасную модель `EFFORT_FABLE` становится `$EFFORT_FABLE_FALLBACK` (xhigh). Скажи пользователю одной строкой, какую модель получила ветка: «Ветка Claude и арбитр: claude-fable-5-2 · high (final-agent.json)» или «… по умолчанию, Opus 5.5 · xhigh». Переключение вниз: (а) unknown model / модель отвергнута; (б) context-overflow post-run (ошибка про превышение контекста в output) → перезапуск Bash B на следующей модели цепочки. Арбитр наследует резолвнутую `FABLE_MODEL`.
+- **Claude-ветка (`fable`) exit != 0 или bad JSON** — `$FABLE_OUT` либо plain-text ошибка, либо headless-envelope без извлекаемого вердикта (в т.ч. `stop_reason: refusal` на security-фокусных прогонах — ожидаемый режим отказа Claude-моделей, при нём перезапуск на `$FABLE_MODEL_FALLBACK`: claude-opus-5, а с `final-agent.json` — claude-opus-5-5). Если каскад Шага 6 ничего не извлёк — stub unreliable. Покажи `cat "$FABLE_OUT"` для диагностики.
 - **Арбитр-сбой** — один retry → интервью по A3-fallback эвристике. Пайплайн не падает.
 - **Обе ветки crashed** (после перезапуска каждой) — `consensus.verdict = unreliable`, `coverage: partial`, обе метки в `dropped`. Пайплайн сломан — диагностировать через raw output файлы. Интервью не запускать; строка журнала всё равно пишется.
 - **Один верификатор упал** (перезапуск не помог) — ветка в `dropped`, `coverage: partial`, вердикт от выжившей, approve запрещён (`consensus.status` = needs-revision). Интервью идёт по находкам выжившей ветки, и в сводке это названо прямо: проверка неполная.

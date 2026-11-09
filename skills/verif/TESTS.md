@@ -6,7 +6,8 @@
 |---|---|---|---|
 | Fable 5 headless + производная Claude-схема → structured_output | PASS | 2026-07-02 | смоук: mini + полная verdict-схема после jq-стрипа |
 | Полная verdict.json БЕЗ стрипа на claude CLI | FAIL | 2026-07-02 | ожидаемо: minLength/minimum/maximum + корневые $schema/$id/title тихо отключают structured_output — поэтому prelude делает производную схему |
-| Prelude echo моделей и effort одной строкой | PASS | 2026-09-21 | `MODELS=claude-fable-5-1 / gpt-6-astra / high / high` в блоке `VERIF_PATHS`: пин моделей виден в логе прогона, расхождение со скиллом ловится глазами |
+| Prelude echo моделей и effort одной строкой | PASS | 2026-11-09 | `MODELS=claude-opus-5-5 / gpt-6-astra / xhigh / high` без личного файла, строка `FINAL_AGENT=` называет источник и запасную модель: пин виден в логе прогона, расхождение со скиллом ловится глазами (до 3.1.2 строка показывала `claude-fable-5-1 / … / high / high`) |
+| 3.4.0: личный `final-agent.json` → модель и effort Claude-ветки и арбитра | PASS (сухая проверка пролога) | 2026-11-09 | вырезанный из SKILL.md блок пролога с `FINAL_AGENT_FILE`: нет файла → `claude-opus-5-5 / xhigh`, запасная `claude-opus-5`; файл `{claude-fable-5-2, high}` → `claude-fable-5-2 / high`, запасная `claude-opus-5-5`; битый JSON и модель `fable` → умолчание с причиной. Живой прогон ветки на Fable — строкой ниже, когда пройдёт |
 | merge_verdicts.sh: N провайдеров / деградация до одного / битый JSON → stub / дубликаты меток | PASS | 2026-07-02 | юнит-тесты на синтетике |
 | merge_verdicts.sh: `{}` от провайдера → stub unreliable (не crash) | PASS | 2026-08-13 | найден 2026-08-13: `{}` — валидный JSON без `.verdict` → rank(null) ронял весь merge («Cannot index object with null»). Фикс: pre-flight требует `.verdict`. Проверено: пустой вердикт ветки → consensus считается, стаб unreliable |
 | render_merged.sh: динамический рендер по providers | PASS | 2026-09-21 | две ветки и деградация до одной |
