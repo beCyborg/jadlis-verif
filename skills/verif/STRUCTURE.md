@@ -42,13 +42,18 @@
     │                             строка ПОКРЫТИЕ, пометки ⚠ НЕ УЧАСТВОВАЛ / ⚠ СБОЙ)
     ├── log_run.sh               (детерминированная строка журнала → AI/verif/_runs.jsonl)
     ├── rounds.sh                (раунды интервью по `depends_on` арбитра; циклы разрывает)
+    ├── final-agent.py           (личный final-agent.json → модель и effort Claude-ветки и арбитра)
+    ├── verif-settings.py        (личный verif.json → режим интервью и решения без вопросов; --manual)
+    ├── instructions.sh          (одна инструкция правки на находку — для Фазы B и Фазы C)
+    ├── changed_sections.py      (какие разделы задели правки — для блока для чтения)
     └── verif_stats.sh           (сводка по журналу: точность веток, доля partial,
                                   перевороты арбитра, минуты интервью, регрессии правок,
                                   свой ответ по фактам и решениям, зависимости)
 
 <repo-root>/tools/
-└── backfill_runs.sh             (РАЗОВЫЙ, не рантайм: собрать журнал из уже лежащих
-                                  артефактов; отказывается писать поверх непустого журнала)
+├── backfill_runs.sh             (РАЗОВЫЙ, не рантайм: собрать журнал из уже лежащих
+│                                 артефактов; отказывается писать поверх непустого журнала)
+└── selftest.sh                  (офлайн-проверка скриптов на синтетике: bash tools/selftest.sh)
 
 <plugin-data>/verif-homes/       (${CLAUDE_PLUGIN_DATA} — переживает обновление плагина;
                                   шаблоны едут в <plugin-root>/assets/verif-homes/ и
@@ -78,3 +83,6 @@
 | Правило необратимости правки | `schema/arbiter.json` (`reversible`) + «Rules of evidence» в `system-prompts/arbiter.md` + таблица оснований в `interview-apply.md` A3.2 |
 | Правило перепроверки правок, потолок кругов | `references/delta-recheck.md` + `system-prompts/delta-check.md` + `schema/delta.json` |
 | Поля журнала запусков | `scripts/log_run.sh` (сборка строки) + `scripts/verif_stats.sh` (что считаем) |
+| Личный режим без вопросов, защищённые случаи, «Решил сам», возврат пункта | `scripts/verif-settings.py` + `interview-apply.md` A3.0, A3.3, A5 + поля `settings` / `self_decided` в `scripts/log_run.sh` |
+| Инструкция правки, с которой сверяет Фаза C | `scripts/instructions.sh` (Фаза B шаг 1b и Фаза C C1) |
+| Последний вывод прогона | `SKILL.md`, «Блок для чтения» + `scripts/changed_sections.py` |

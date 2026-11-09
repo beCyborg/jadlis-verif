@@ -21,6 +21,8 @@ Codex. Причина в ресёрче «Состязательная вери�
 ## C0 (в Фазе B, ДО запуска субагентов): снимки целевых файлов
 
 Цели обычно лежат вне git (vault), поэтому дифф строим сами — по снимку, а не по индексу.
+Снимки снимаются при любом применении, и при `--no-recheck` тоже: по ним блок для чтения находит
+изменённые разделы (`scripts/changed_sections.py`), а возврат пункта (A5) — куски диффа для отката.
 Один foreground Bash перед fan-out субагентов, по списку целевых файлов Фазы B:
 
 ```bash
@@ -51,16 +53,17 @@ wc -l "$DELTA_DIFF"
 а не `sed`: у BSD sed нет `\|`, замена молча не срабатывала бы и в диффе стояли бы имена снимков. Дифф пуст → правок не было,
 шаг пропускается.
 
-Замороженный список — принятые находки, как их решили, без последующих переформулировок:
+Замороженный список — принятые находки, как их решили, без последующих переформулировок. Инструкция
+берётся тем же скриптом, что дал её субагентам в Фазе B (шаг 1b), поэтому правка сверяется с тем
+текстом, который реально применяли. До 3.5.0 здесь стояла `finding.recommendation`, а для решения с
+ответом «как советует арбитр» Фаза B применяла `decision_question.recommended_detail` — перепроверка
+сверяла правку не с той инструкцией.
 
 ```bash
 DELTA_FROZEN=$(mktemp -t verif-delta-frozen.XXXXXX.json)
-jq -n --slurpfile d "$DECISIONS_OUT" --slurpfile f "$FINDINGS_OUT" '
-  ($f[0] | map({key: .id, value: .}) | from_entries) as $byid
-  | $d[0] | map(select(.decision == "applied" or .decision == "custom"))
-  | map({id, title, file,
-         instruction: (if .decision == "custom" then .custom_instruction
-                       else ($byid[.id].recommendation // "") end)})' > "$DELTA_FROZEN"
+bash "${CLAUDE_PLUGIN_ROOT}/skills/verif/scripts/instructions.sh" \
+  --decisions "$DECISIONS_OUT" --findings "$FINDINGS_OUT" --arbiter "$ARBITER_OUT" \
+  | jq 'map({id, title, file, instruction})' > "$DELTA_FROZEN"
 ```
 
 ## C2: вызов перепроверяющего

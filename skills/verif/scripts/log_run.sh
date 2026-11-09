@@ -22,6 +22,11 @@
 #   --out <file>          куда дописывать (по умолчанию <persist-dir>/_runs.jsonl)
 #   --backfilled          пометить строку как восстановленную задним числом
 #   --keep-times          не удалять файл меток после успешной записи
+#   --settings '<json>'   личные настройки интервью (3.5.0): вывод scripts/verif-settings.py
+#   --update              заменить строку с тем же --base, а не дописывать новую (3.5.0: владелец
+#                         вернул пункт «Решил сам» после прогона). Номер `run` сохраняется; поле,
+#                         которое теперь вышло null (нет файла меток, флаг не передан), берётся
+#                         из старой строки. Строки с таким base нет → обычная дозапись.
 #
 # Файл меток времени — строки вида `ключ=<epoch>`; пишутся прелюдией и границами интервью:
 #   prelude=…  machine_done=…  interview_start=…  interview_done=…
@@ -41,9 +46,11 @@ TIMES_FILE=""
 OUT=""
 BACKFILLED="false"
 KEEP_TIMES=0
+SETTINGS="null"
+UPDATE=0
 
 usage() {
-  echo "Usage: $0 --persist-dir <dir> --base <BASE> [--target <path>] [--type <t>] [--models <json>] [--mode auto|manual] [--delta-by <who>] [--fix-rounds <n>] [--times <file>] [--out <file>] [--backfilled] [--keep-times]" >&2
+  echo "Usage: $0 --persist-dir <dir> --base <BASE> [--target <path>] [--type <t>] [--models <json>] [--mode auto|manual] [--delta-by <who>] [--fix-rounds <n>] [--times <file>] [--out <file>] [--backfilled] [--keep-times] [--settings <json>] [--update]" >&2
   exit 64
 }
 
@@ -61,6 +68,8 @@ while [[ $# -gt 0 ]]; do
     --out)         OUT="$2";         shift 2 ;;
     --backfilled)  BACKFILLED="true"; shift ;;
     --keep-times)  KEEP_TIMES=1;     shift ;;
+    --settings)    SETTINGS="$2";    shift 2 ;;
+    --update)      UPDATE=1;         shift ;;
     *) echo "Unknown argument: $1" >&2; usage ;;
   esac
 done
@@ -125,6 +134,7 @@ ROW=$(jq -n -c \
   --argjson fix_rounds "$FIX_ROUNDS" \
   --argjson run_no "$RUN_NO" \
   --argjson backfilled "$BACKFILLED" \
+  --argjson settings "$SETTINGS" \
   --arg base "$BASE" \
   --arg target "$TARGET" \
   --arg type "$TYPE" '
@@ -205,7 +215,7 @@ ROW=$(jq -n -c \
       # Процедурные развилки авто-режима по фактам; решения и пересмотр зависимых (3.2.0) — не развилки.
       forks: (if $decisions == null then null
               else ([$decisions[] | select((.why_asked // null) as $w
-                       | ["critical", "irreversible", "disputed", "consensus-overruled"] | index($w))] | length) end),
+                       | ["critical", "irreversible", "disputed", "consensus-overruled", "critical-irreversible"] | index($w))] | length) end),
       why_asked: (if $decisions == null then null
                   else ([$decisions[] | select((.why_asked // null) != null) | .why_asked]
                         | group_by(.) | map({key: .[0], value: length}) | from_entries) end),
@@ -257,6 +267,25 @@ ROW=$(jq -n -c \
                            accepted: (if $decisions == null then null
                                       else ([$acc[] | select(.hypothetical == true)] | length) end)} end),
 
+      # 3.5.0: личный verif.json и список «Решил сам». settings — вывод verif-settings.py (null — флаг
+      # не передан, прогон до 3.5.0). self_decided — пункты, решённые без вопроса и показанные списком
+      # (`self_decided: true` в decisions.json): сколько, сколько из них применено авто (`auto_decision`),
+      # сколько среди применённых решений, сколько владелец вернул. Нет такого поля ни у одного
+      # объекта → null.
+      settings: (if $settings == null then null
+                 else {interview: ($settings.interview // null), decisions: ($settings.decisions // null),
+                       source: (if ($settings.source // null) == null then null
+                                elif $settings.source == "flag" then "flag" else "file" end)} end),
+      self_decided: (if $decisions == null or ([$decisions[] | select(has("self_decided"))] | length) == 0 then null
+                     else ([$decisions[] | select(.self_decided == true)]) as $sd
+                       | {listed: ($sd | length),
+                          applied: ([$sd[] | select((.auto_decision // .decision) == "applied")] | length),
+                          skipped: ([$sd[] | select((.auto_decision // .decision) == "skipped")] | length),
+                          decisions_applied: ([$sd[] | select(.kind == "decision" and (.auto_decision // .decision) == "applied")] | length),
+                          returned: ([$sd[] | select(.returned == true)] | length),
+                          returned_decisions: ([$sd[] | select(.kind == "decision" and .returned == true)] | length),
+                          volume_cut: ([$sd[] | select(.volume_cut == true)] | length)} end),
+
       machine_min: minutes("prelude"; "machine_done"),
       interview_min: minutes("interview_start"; "interview_done"),
 
@@ -273,10 +302,26 @@ ROW=$(jq -n -c \
 ')
 
 # Одна строка, одна дозапись. jq уже проверил валидность — печатаем как есть.
-printf '%s\n' "$ROW" >> "$OUT"
+# --update: та же строка по base заменяется на месте (атомарно, через временный файл рядом).
+if [[ "$UPDATE" == 1 && -s "$OUT" ]] && jq -e --arg b "$BASE" 'select(.base == $b)' "$OUT" >/dev/null 2>&1; then
+  TMP_OUT=$(mktemp "${OUT}.XXXXXX")
+  jq -c --arg b "$BASE" --argjson new "$ROW" '
+    if .base == $b then
+      . as $old
+      | ($new | to_entries | map(if .value == null and ($old[.key] // null) != null
+                                 then .value = $old[.key] else . end) | from_entries)
+      | .run = $old.run
+    else . end' "$OUT" > "$TMP_OUT"
+  mv "$TMP_OUT" "$OUT"
+  RUN_NO=$(jq -r --arg b "$BASE" 'select(.base == $b) | .run' "$OUT" | tail -1)
+  ACTION="UPDATED"
+else
+  printf '%s\n' "$ROW" >> "$OUT"
+  ACTION="LOGGED"
+fi
 
 if [[ "$KEEP_TIMES" == 0 && -e "$TIMES_FILE" ]]; then
   rm -f "$TIMES_FILE"
 fi
 
-echo "LOGGED run=$RUN_NO base=$BASE → $OUT"
+echo "$ACTION run=$RUN_NO base=$BASE → $OUT"

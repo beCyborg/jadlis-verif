@@ -146,7 +146,14 @@ does not make the decisions on the findings: accept, reject or rewrite is yours 
 was accepted goes into the edits. It does not check primary sources on the web by itself: the web
 check switches on additionally if you have `jadlis-search` installed. And the main thing: two readings
 agreeing is two readings agreeing, not proof. The arbiter shows where both of them converged and
-where one voice was left against the other; the decision is still yours.
+where one voice was left against the other; the decision is still yours. Nor does it carry the plan out:
+a run ends with a link to the updated file and the list of changed sections — reading it is yours.
+
+**If you are tired of deciding.** A personal file `~/.claude/skills/_shared/verif.json` with
+`{"interview":"auto","decisions":"auto"}` drops the mode question and settles decisions by the arbiter's
+advice. It asks only in three cases: the edit is critical and irreversible, the arbiter is unsure, the
+arbiter goes against both verifiers. Everything settled without you is listed at the end as «Решил сам»;
+any item comes back with «верни F3». For one manual run — `/verif --manual`. No file — everything as above.
 
 **What you need.** No keys — this is the only one in the line that does not need Brave and Firecrawl.
 What it does need is one subscription of your own: ChatGPT — for Codex CLI. Checked on Codex CLI

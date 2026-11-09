@@ -65,6 +65,7 @@ jq -r -s --arg since "$SINCE" --argjson fresh "$FRESH" '
   | ([$runs[] | select(.by_kind != null)]) as $kd
   | ([$runs[] | select(.hypothetical != null)]) as $hyp
   | ([$runs[] | .raised | select(. != null) | ([.[]] | add)] | add // 0) as $raised_total
+  | ([$runs[] | select(.self_decided != null)]) as $sdr
 
   | [
       "Запусков в выборке: \($n)  (восстановлено задним числом: \([$runs[] | select(.backfilled == true)] | length))",
@@ -106,6 +107,15 @@ jq -r -s --arg since "$SINCE" --argjson fresh "$FRESH" '
        else ([$hyp[] | .hypothetical.raised // 0] | add) as $hr
          | ([$hyp[] | .hypothetical.accepted // 0] | add) as $ha
          | "Гипотетические: отмечено \($hr), ты вернул \($ha) — \(pct($ha; $hr))   (прогонов 3.3.0: \($hyp | length))" end),
+      # 3.5.0: «Решил сам» при decisions: auto в личном verif.json. Высокая доля возвратов среди
+      # применённых решений значит, что решать без вопроса рано — вернуть decisions: ask.
+      (if ($sdr | length) == 0 then "Решил сам: — (нет прогонов с decisions: auto)"
+       else ([$sdr[] | .self_decided.listed] | add) as $sl
+         | ([$sdr[] | .self_decided.applied] | add) as $sa
+         | ([$sdr[] | .self_decided.decisions_applied] | add) as $sda
+         | ([$sdr[] | .self_decided.returned] | add) as $sr
+         | ([$sdr[] | .self_decided.returned_decisions] | add) as $srd
+         | "Решил сам: \($sl) пунктов, применено \($sa), из них решений \($sda); ты вернул \($sr) — \(pct($sr; $sl)), решений \($srd) — \(pct($srd; $sda))   (прогонов: \($sdr | length))" end),
       "",
       "Минут интервью на находку: " + (if ($timed | length) == 0 then "— (нет замеров времени)"
         else ((((([$timed[] | .interview_min] | add) / ([$timed[] | .findings] | add)) * 10) | round) / 10 | tostring)

@@ -5,6 +5,25 @@
 
 ## [Unreleased]
 
+## [3.5.0] — 2026-11-09 — решения без вопросов по личному файлу, блок для чтения / Decisions without questions from a personal file, reading block
+
+### Для человека
+- Без личного файла всё как раньше: вопрос о режиме, каждое решение задаётся. Новое у всех одно — блок в конце прогона: ссылка на обновлённый файл, изменённые разделы, что осталось открытым. После него /verif останавливается и план не исполняет.
+- Личный файл `~/.claude/skills/_shared/verif.json` = `{"interview":"auto","decisions":"auto"}` (в плагин не входит). `interview: auto` — вопроса о режиме нет, одна строка «Режим авто; вручную — /verif --manual». `decisions: auto` — решения идут по совету арбитра. Вопрос остаётся в трёх случаях: критично и необратимо; арбитр не уверен; арбитр против обоих проверяющих. Выборочной проверки и вопроса об объёме нет: при > 20 находках разбираются серьёзные, остальные стоят в списке.
+- Всё решённое без вопроса — в списке «Решил сам» в конце. Любой пункт возвращается фразой «верни F3»: правка откатывается или применяется, журнал обновляет строку прогона.
+- `/verif --manual` — разово ручной режим, сильнее файла.
+- Перепроверка правок сверяет каждую правку с той инструкцией, которую реально применили. Раньше для решения «как советует арбитр» она сверяла с исходной рекомендацией находки.
+
+### For agents
+- Added: `skills/verif/scripts/verif-settings.py` (personal `verif.json` reader, `VERIF_SETTINGS_FILE` for tests, `--manual` wins; any bad value → both `ask`), prelude line `VERIF_SETTINGS=`.
+- Added: `skills/verif/scripts/instructions.sh` — one source of the edit instruction (`instruction` → `custom_instruction` → `decision_question.recommended_detail` for `answer: recommended` → `recommendation`); Phase B step 1b and Phase C C1 both use it. Fixes the Phase C mismatch found in the 3.4.0 smoke.
+- Added: `skills/verif/scripts/changed_sections.py` — headings touched by the edits, from C0 snapshots.
+- Added: `tools/selftest.sh` — offline checks of the new scripts, `log_run.sh` and `verif_stats.sh`.
+- Changed: `interview-apply.md` — A3.0 reads the setting (old branch intact), new A3.3 (`decisions: auto`, guarded cases `critical-irreversible` / `disputed` / `consensus-overruled`, no cap, no spot-check, «Решил сам»), new A5 (return after the run), A4 fields `instruction`, `self_decided`, `auto_decision`, `returned`, `volume_cut`; C0 snapshots are taken even with `--no-recheck`.
+- Changed: `SKILL.md` — `--manual`, mode line, section «Блок для чтения», hard stop after it; journal call passes `--settings`.
+- Changed: `log_run.sh` — fields `settings`, `self_decided`; `forks` counts `critical-irreversible`; `--update` replaces the row of the same base, keeps `run` and old non-null values. Rows of older runs are unchanged (new fields `null`).
+- Changed: `verif_stats.sh` — line «Решил сам».
+
 ## [3.4.0] — 2026-11-09 — ветка Claude и арбитр из личного файла / Claude branch and arbiter from a personal file
 
 ### Для человека
