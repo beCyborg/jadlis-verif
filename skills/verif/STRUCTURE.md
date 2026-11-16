@@ -40,7 +40,7 @@
     │                             label:path; + coverage / dropped / status)
     ├── render_merged.sh         (динамический pretty-print по consensus.providers;
     │                             строка ПОКРЫТИЕ, пометки ⚠ НЕ УЧАСТВОВАЛ / ⚠ СБОЙ)
-    ├── log_run.sh               (детерминированная строка журнала → AI/verif/_runs.jsonl)
+    ├── log_run.sh               (детерминированная строка журнала → {VERIF_DIR}/_runs.jsonl)
     ├── rounds.sh                (раунды интервью по `depends_on` арбитра; циклы разрывает)
     ├── final-agent.py           (личный final-agent.json → модель и effort Claude-ветки и арбитра)
     ├── verif-settings.py        (личный verif.json → режим интервью и решения без вопросов; --manual)
@@ -65,7 +65,7 @@
     └── auth.json                (symlink на ~/.codex/auth.json)
 ```
 
-Артефакты прогона — в vault, `AI/verif/` (корень vault = `${user_config.VAULT_PATH}`): `{BASE}--{codex,fable,merged,findings,arbiter,decisions,delta}.json`, `{BASE}--verdict.md`. Там же журнал всех прогонов `_runs.jsonl` — только дозапись, по строке на прогон.
+Артефакты прогона — в vault, `{VERIF_DIR}/` (опция `VERIF_DIR`, по умолчанию `AI/verif`, путь от корня vault; корень vault — опция `VAULT_PATH`): `{BASE}--{codex,fable,merged,findings,arbiter,decisions,delta}.json`, `{BASE}--verdict.md`. Там же журнал всех прогонов `_runs.jsonl` — только дозапись, по строке на прогон.
 
 ## Что где менять
 

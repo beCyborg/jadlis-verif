@@ -5,6 +5,17 @@
 
 ## [Unreleased]
 
+## [3.6.0] — 2026-11-16 — папка прогонов — настройка / Run folder is a setting
+
+### Для человека
+- Папку, куда ложатся артефакты прогона и журнал `_runs.jsonl`, теперь задаёт опция `VERIF_DIR` (путь от корня vault). По умолчанию — прежняя `AI/verif`, так что у тех, кто ничего не менял, всё на старом месте. Поменять — `/plugin configure jadlis-verif@jadlis`.
+- Описание опции `VAULT_PATH` больше не обещает папку `Знания/Ресерчи/`: verif туда ничего не пишет.
+
+### For agents
+- Added: userConfig `VERIF_DIR` (string, default `AI/verif`, optional).
+- Changed: `SKILL.md` prelude builds `PERSIST_DIR="$VAULT_DIR/$VERIF_DIR"` from `'${user_config.VERIF_DIR}'`; empty or unsubstituted value → `AI/verif`, leading/trailing `/` trimmed. Text, `STRUCTURE.md`, `references/delta-recheck.md`, `references/interview-apply.md` name the folder `{VERIF_DIR}`.
+- Changed: `verif_stats.sh` and `tools/backfill_runs.sh` default to `$VAULT_PATH/$VERIF_DIR` (env, same fallback); the skill now passes `"$PERSIST_DIR/_runs.jsonl"` to `verif_stats.sh` explicitly.
+
 ## [3.5.0] — 2026-11-09 — решения без вопросов по личному файлу, блок для чтения / Decisions without questions from a personal file, reading block
 
 ### Для человека

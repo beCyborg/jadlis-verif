@@ -114,7 +114,7 @@ Worth knowing as it runs:
 - Branches run in parallel and report as they finish — the first verdict lands before the others.
 - The file type (`plan` / `research` / `doc`) is detected automatically; `--type` sets it explicitly.
 - Before the findings walk-through the plugin asks for a mode: "auto" — it applies the arbiter's calls itself, asks at most four questions about the strong forks and prints what it decided before applying; "manual" — one question per finding. If the arbiter did not answer, it goes manual straight away.
-- Every artifact lands in the vault under `AI/verif/` — one json per branch, the merged verdict, the decisions file (which records what you decided and what auto mode did) and the result of the re-check. A run-log line is appended to `_runs.jsonl` in the same folder: it shows how the share of accepted findings moves from run to run.
+- Every artifact lands in the vault under `AI/verif/` (the `VERIF_DIR` option changes the folder: a path from the vault root, `/plugin configure jadlis-verif@jadlis`) — one json per branch, the merged verdict, the decisions file (which records what you decided and what auto mode did) and the result of the re-check. A run-log line is appended to `_runs.jsonl` in the same folder: it shows how the share of accepted findings moves from run to run.
 - Quality depends on what you hand over: an assumption written out is a target; an assumption dissolved into prose is a mine nobody finds.
 
 ## Limits and cost

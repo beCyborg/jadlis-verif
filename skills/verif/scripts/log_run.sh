@@ -1,5 +1,6 @@
 #!/usr/bin/env bash
-# log_run.sh — Собрать одну строку журнала запуска и дописать её в <vault>/AI/verif/_runs.jsonl.
+# log_run.sh — Собрать одну строку журнала запуска и дописать её в <vault>/<VERIF_DIR>/_runs.jsonl
+# (VERIF_DIR — опция плагина, по умолчанию AI/verif; каталог передаёт --persist-dir).
 #
 # Usage:
 #   log_run.sh --persist-dir <dir> --base <BASE> [опции]
@@ -10,7 +11,7 @@
 # кто перепроверял правки и сколько было кругов доправок.
 #
 # Опции:
-#   --persist-dir <dir>   каталог артефактов (обычно <vault>/AI/verif)         [обязательно]
+#   --persist-dir <dir>   каталог артефактов (обычно <vault>/<VERIF_DIR>)      [обязательно]
 #   --base <BASE>         префикс имён артефактов, например 2026-09-21--plan   [обязательно]
 #   --target <path>       абсолютный путь проверенного файла (для sha256)
 #   --type plan|research|doc

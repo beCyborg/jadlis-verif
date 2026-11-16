@@ -4,7 +4,8 @@
 # Usage:
 #   verif_stats.sh [<runs.jsonl>] [--since YYYY-MM-DD] [--fresh]
 #
-# По умолчанию читает `<vault>/AI/verif/_runs.jsonl`, если путь не передан и задан VAULT_PATH,
+# По умолчанию читает `<vault>/<VERIF_DIR>/_runs.jsonl` (VERIF_DIR — путь от корня vault, пусто или
+# не подставлено → AI/verif), если путь не передан и задан VAULT_PATH,
 # иначе требует путь аргументом. `--fresh` отбрасывает строки `backfilled: true` — обратная
 # заливка даёт базовую линию, но времени интервью и решений в ней нет, и средние она портит.
 #
@@ -28,7 +29,9 @@ done
 
 if [[ -z "$RUNS" ]]; then
   if [[ -n "${VAULT_PATH:-}" ]]; then
-    RUNS="$VAULT_PATH/AI/verif/_runs.jsonl"
+    VDIR="${VERIF_DIR:-}"; VDIR="${VDIR#/}"; VDIR="${VDIR%/}"
+    case "$VDIR" in ""|*'user_config.'*) VDIR="AI/verif" ;; esac
+    RUNS="$VAULT_PATH/$VDIR/_runs.jsonl"
   else
     echo "Usage: $0 <runs.jsonl> [--since YYYY-MM-DD] [--fresh]" >&2
     exit 64

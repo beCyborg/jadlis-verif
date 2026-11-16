@@ -1,6 +1,6 @@
 #!/usr/bin/env bash
 # backfill_runs.sh — РАЗОВЫЙ скрипт: собрать журнал `_runs.jsonl` из артефактов, которые уже
-# лежат в <vault>/AI/verif, чтобы у релиза 3.1.0 была базовая линия для сравнения.
+# лежат в <vault>/<VERIF_DIR> (по умолчанию AI/verif), чтобы у релиза 3.1.0 была базовая линия для сравнения.
 #
 # Не часть рантайма скилла: живёт в tools/, зовётся руками один раз. Дальше журнал ведёт
 # `skills/verif/scripts/log_run.sh` из самого прогона.
@@ -8,7 +8,8 @@
 # Usage:
 #   tools/backfill_runs.sh [--persist-dir <dir>] [--out <file>] [--dry-run] [--force]
 #
-#   --persist-dir  каталог артефактов (по умолчанию $VAULT_PATH/AI/verif, иначе ~/Jadlis/AI/verif)
+#   --persist-dir  каталог артефактов (по умолчанию $VAULT_PATH/$VERIF_DIR, без VAULT_PATH — ~/Jadlis;
+#                  VERIF_DIR — путь от корня vault, пусто или не подставлено → AI/verif)
 #   --out          куда писать (по умолчанию <persist-dir>/_runs.jsonl)
 #   --dry-run      показать список запусков и выйти, ничего не записав
 #   --force        писать, даже если файл журнала уже существует (дубликаты на твоей совести)
@@ -41,7 +42,9 @@ while [[ $# -gt 0 ]]; do
 done
 
 if [[ -z "$PERSIST_DIR" ]]; then
-  PERSIST_DIR="${VAULT_PATH:-$HOME/Jadlis}/AI/verif"
+  VDIR="${VERIF_DIR:-}"; VDIR="${VDIR#/}"; VDIR="${VDIR%/}"
+  case "$VDIR" in ""|*'user_config.'*) VDIR="AI/verif" ;; esac
+  PERSIST_DIR="${VAULT_PATH:-$HOME/Jadlis}/$VDIR"
 fi
 [[ -d "$PERSIST_DIR" ]] || { echo "No such directory: $PERSIST_DIR" >&2; exit 66; }
 [[ -x "$LOG_RUN" || -f "$LOG_RUN" ]] || { echo "log_run.sh not found at $LOG_RUN" >&2; exit 66; }
