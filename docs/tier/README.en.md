@@ -26,7 +26,7 @@ Six steps of the mechanism:
 One run, end to end (tag `jadlis-verif--v3.1.0`):
 
 1. **Your file** — plan, research or document.
-2. **Two branches, separately** — Codex (`gpt-6-astra`) and Claude (Opus 5.5).
+2. **Two branches, separately** — Codex (`gpt-6.2-astra`) and Claude (Opus 5.5).
 3. **Merge on the worst** verdict among the branches that answered, with a coverage line.
 4. **Arbiter Opus 5.5** — sources hidden: A / B.
 5. **The findings walk-through** — "auto" or "manual" → you decide.

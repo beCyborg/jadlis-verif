@@ -60,7 +60,7 @@
                                   разворачиваются сюда при первом запуске)
 └── codex-home/
     ├── AGENTS.md                (Codex verifier policy: FACT/INFERENCE/SPECULATION)
-    ├── config.toml              (единый профиль GPT-6 Astra, high; service_tier=default в плагине;
+    ├── config.toml              (единый профиль GPT-6.2 Astra, high; service_tier=default в плагине;
     │                             локальный пин priority — настройка получателя)
     └── auth.json                (symlink на ~/.codex/auth.json)
 ```

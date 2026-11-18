@@ -5,6 +5,17 @@
 
 ## [Unreleased]
 
+## [3.6.1] — 2026-11-18 — Codex-ветка на GPT-6.2 Astra / Codex branch on GPT-6.2 Astra
+
+### Для человека
+- Ветка Codex теперь работает на новой модели GPT-6.2 Astra вместо GPT-6 Astra. Effort прежний — `high`.
+- Откат — вернуть `gpt-6-astra`: модель остаётся в каталоге Codex.
+
+### For agents
+- Changed: `skills/verif/SKILL.md` — `CODEX_MODEL="gpt-6-astra"` → `"gpt-6.2-astra"`, rollback note → `gpt-6-astra`; launch message and the liveness ping in gotchas name the new model.
+- Changed: `assets/verif-homes/codex-home/config.toml` `model` → `gpt-6.2-astra`; `skills/verif/STRUCTURE.md`, `docs/tier/README*.md` follow.
+- Migration: the working copy `${CLAUDE_PLUGIN_DATA}/verif-homes/codex-home/config.toml` is not redeployed (first-run copy is idempotent) — `cp` the template over it, or the `-m` flag alone keeps runs on the new model while the file says the old one. Needs Codex CLI with `gpt-6.2-astra` in its model catalog (checked on 0.169.0).
+
 ## [3.6.0] — 2026-11-16 — папка прогонов — настройка / Run folder is a setting
 
 ### Для человека

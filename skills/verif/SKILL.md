@@ -7,7 +7,7 @@ allowed-tools: Read, Glob, Write, Edit, MultiEdit, AskUserQuestion, Task, Agent,
 
 # /verif — Dual adversarial верификация (Codex + Claude Opus 5.5) с арбитром
 
-Тонкий orchestrator двух независимых верификаторов: OpenAI GPT-6 Astra через `codex exec`, Anthropic Claude Opus 5.5 через `claude -p` (headless; ветка по-прежнему зовётся `fable` — метка историческая). Оба возвращают JSON по единой `schema/verdict.json`. Результаты сливаются через `scripts/merge_verdicts.sh` (strict hierarchy: unreliable > needs-revision > approve, N провайдеров с метками) и рендерятся через `scripts/render_merged.sh`.
+Тонкий orchestrator двух независимых верификаторов: OpenAI GPT-6.2 Astra через `codex exec`, Anthropic Claude Opus 5.5 через `claude -p` (headless; ветка по-прежнему зовётся `fable` — метка историческая). Оба возвращают JSON по единой `schema/verdict.json`. Результаты сливаются через `scripts/merge_verdicts.sh` (strict hierarchy: unreliable > needs-revision > approve, N провайдеров с метками) и рендерятся через `scripts/render_merged.sh`.
 
 Provider-agnostic policy — `${CLAUDE_PLUGIN_DATA}/verif-homes/codex-home/AGENTS.md` для Codex, `system-prompts/fable-verifier.md` для Claude-ветки (codex-home разворачивается из `${CLAUDE_PLUGIN_ROOT}/assets/verif-homes/` при первом запуске). Templates — `prompts/{plan,research,doc}.md`.
 
@@ -99,7 +99,7 @@ fi
 # Hardcoded settings
 EFFORT_CODEX="high"
 EFFORT_FABLE="xhigh"   # 3.1.3 (30.09.2026): Claude-ветка и арбитр — финальные агенты цепочки, xhigh по ресёрчу «Opus 5.5 на моих задачах» (ревью на xhigh находит больше, 3× время); личный final-agent.json ниже его заменяет
-CODEX_MODEL="gpt-6-astra"   # GPT-6 Astra с 05.09.2026; effort `high` с 06.09.2026 по ресёрчу «Effort для плана и кода» (выше high растут токены, не качество); `ultra` = авто-делегирование, не нужен; откат = `gpt-5.6-sol` (в каталоге жив)
+CODEX_MODEL="gpt-6.2-astra"   # GPT-6.2 Astra с 18.11.2026 (до него GPT-6 Astra с 05.09.2026); effort `high` с 06.09.2026 по ресёрчу «Effort для плана и кода» (выше high растут токены, не качество); `ultra` = авто-делегирование, не нужен; откат = `gpt-6-astra` (в каталоге жив)
 
 # Модель Claude-ветки. Метка `fable` (FABLE_*, FABLE_OUT, EFFORT_FABLE, merge-метка, ключи _runs.jsonl)
 # историческая: с 3.1.2 (29.09.2026) ветка идёт на Opus 5.5; имена не меняются ради схемы журнала и тестов.
@@ -249,7 +249,7 @@ claude -p "$(cat "{PROMPT_FILE}")" \
 
 `< /dev/null` обязателен: без него фоновый `claude -p` ждёт stdin и печатает warning-строку ПЕРЕД JSON-envelope — ломает парсинг (источник нулевых прогонов v5).
 
-Сообщи пользователю: "Верификаторы запущены параллельно (Codex GPT-6 Astra + Claude Opus 5.5). Результаты будут появляться по мере завершения..."
+Сообщи пользователю: "Верификаторы запущены параллельно (Codex GPT-6.2 Astra + Claude Opus 5.5). Результаты будут появляться по мере завершения..."
 
 ### Обработка notifications
 
@@ -502,7 +502,7 @@ bash "$LOG_RUN" \
 
 ## Ошибки и fallbacks
 
-- **Background Bash exit != 0** — notification содержит exit code. Прочитать output файл для диагностики. `merge_verdicts.sh` увидит невалидный JSON → `unreliable` stub. Покажи пользователю tail stderr + диагностику CLI: `codex login status` (auth) и `codex exec -m gpt-6-astra "ping" < /dev/null` (живость модели).
+- **Background Bash exit != 0** — notification содержит exit code. Прочитать output файл для диагностики. `merge_verdicts.sh` увидит невалидный JSON → `unreliable` stub. Покажи пользователю tail stderr + диагностику CLI: `codex login status` (auth) и `codex exec -m gpt-6.2-astra "ping" < /dev/null` (живость модели).
 - **Claude-ветка (метка `fable`): цепочка моделей** `claude-opus-5-5` → `claude-opus-5`; с личным `final-agent.json` (3.4.0) — модель файла → `claude-opus-5-5`, строка `FINAL_AGENT=` пролога называет цепочку. При переходе на запасную модель `EFFORT_FABLE` становится `$EFFORT_FABLE_FALLBACK` (xhigh). Скажи пользователю одной строкой, какую модель получила ветка: «Ветка Claude и арбитр: claude-fable-5-2 · high (final-agent.json)» или «… по умолчанию, Opus 5.5 · xhigh». Переключение вниз: (а) unknown model / модель отвергнута; (б) context-overflow post-run (ошибка про превышение контекста в output) → перезапуск Bash B на следующей модели цепочки. Арбитр наследует резолвнутую `FABLE_MODEL`.
 - **Claude-ветка (`fable`) exit != 0 или bad JSON** — `$FABLE_OUT` либо plain-text ошибка, либо headless-envelope без извлекаемого вердикта (в т.ч. `stop_reason: refusal` на security-фокусных прогонах — ожидаемый режим отказа Claude-моделей, при нём перезапуск на `$FABLE_MODEL_FALLBACK`: claude-opus-5, а с `final-agent.json` — claude-opus-5-5). Если каскад Шага 6 ничего не извлёк — stub unreliable. Покажи `cat "$FABLE_OUT"` для диагностики.
 - **Арбитр-сбой** — один retry → интервью по A3-fallback эвристике. Пайплайн не падает.
